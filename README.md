@@ -101,12 +101,16 @@ Plain substrings, not patterns — a real seven-rule policy turned out to be
 alternations of literals every time, and substrings need no validating and
 cannot backtrack over thousands of entity ids.
 
-Words are matched against the **entity id and the device's name**, slugified.
-The device name is there because an entity id is built from it once and then
-frozen: rename the device and only the name is current. And because the domain
-prefix is part of the id, `automation.` on its own — dot included — scopes a
-rule to every automation, which is also why automations, scripts and helpers
-need nothing special to be reachable.
+Words are matched against the **entity id**, and only that. Searching the
+device's name too was tried, to catch a device renamed after its entities were
+created, and had to come out: a Zigbee motion sensor is a multi-sensor, so a
+device called "Capteur mouvement bureau" made the word `mouvement` match its
+temperature, illuminance and battery entities as well. A device class is the
+right tool for the renamed device, and it does not spill.
+
+The domain prefix is part of the id, so `automation.` on its own — dot
+included — scopes a rule to every automation, which is also why automations,
+scripts and helpers need nothing special to be reachable.
 
 Every entity a rule recognises, and which carries none of its labels — neither
 itself nor on its device — gets a repair, with a **Fix** button that applies

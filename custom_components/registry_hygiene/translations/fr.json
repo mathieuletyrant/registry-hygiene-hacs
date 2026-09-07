@@ -40,7 +40,7 @@
           },
           "data_description": {
             "device_classes": "La moitié fiable. Une entité de classe `motion` peut très bien s'appeler `binary_sensor.hall_detection`, qu'aucun mot ne trouverait. Seules les classes réellement utilisées chez vous sont proposées.",
-            "keywords": "Pour tout ce qu'une classe ne sait pas dire — `linky`, `interrupteur`, `seche_serviette`, `homelab`. Cherchés n'importe où dans l'identifiant de l'entité ou dans le nom de l'appareil ; tapez-en un, entrée, puis le suivant. Des mots simples, pas des motifs. Le préfixe de domaine compte : `automation.` seul cadre une règle sur toutes vos automatisations.",
+            "keywords": "Pour tout ce qu'une classe ne sait pas dire — `linky`, `interrupteur`, `seche_serviette`, `homelab`. Cherchés n'importe où dans l'identifiant de l'entité ; tapez-en un, entrée, puis le suivant. Des mots simples, pas des motifs. Le préfixe de domaine compte : `automation.` seul cadre une règle sur toutes vos automatisations.",
             "labels": "Tous. Une entité à qui il en manque deux reçoit une seule réparation qui les nomme tous les deux.",
             "include_technical": "Décoché pour la plupart des règles : le capteur de batterie d'un détecteur n'a pas à porter `securite`. Coché pour une règle qui ne parle que d'elles — `battery`, `firmware`, `update`."
           }
@@ -56,7 +56,7 @@
           },
           "data_description": {
             "device_classes": "La moitié fiable. Une entité de classe `motion` peut très bien s'appeler `binary_sensor.hall_detection`, qu'aucun mot ne trouverait. Seules les classes réellement utilisées chez vous sont proposées.",
-            "keywords": "Pour tout ce qu'une classe ne sait pas dire — `linky`, `interrupteur`, `seche_serviette`, `homelab`. Cherchés n'importe où dans l'identifiant de l'entité ou dans le nom de l'appareil ; tapez-en un, entrée, puis le suivant. Des mots simples, pas des motifs. Le préfixe de domaine compte : `automation.` seul cadre une règle sur toutes vos automatisations.",
+            "keywords": "Pour tout ce qu'une classe ne sait pas dire — `linky`, `interrupteur`, `seche_serviette`, `homelab`. Cherchés n'importe où dans l'identifiant de l'entité ; tapez-en un, entrée, puis le suivant. Des mots simples, pas des motifs. Le préfixe de domaine compte : `automation.` seul cadre une règle sur toutes vos automatisations.",
             "labels": "Tous. Une entité à qui il en manque deux reçoit une seule réparation qui les nomme tous les deux.",
             "include_technical": "Décoché pour la plupart des règles : le capteur de batterie d'un détecteur n'a pas à porter `securite`. Coché pour une règle qui ne parle que d'elles — `battery`, `firmware`, `update`."
           }

@@ -105,7 +105,7 @@ def is_a_real_entity(disabled_by):
 
 
 def missing_labels(
-    rule, haystack, device_class, entity_category, labels, device_labels
+    rule, entity_id, device_class, entity_category, labels, device_labels
 ):
     """Which of the rule's labels this entity ought to carry and does not.
 
@@ -126,13 +126,13 @@ def missing_labels(
     already covered by a literal beside them. Substrings need no validating and
     cannot backtrack over thousands of ids.
 
-    `haystack` is the entity id and the slug of its device's name, joined. The
-    device name is there because it is the fresher of the two: an entity id is
-    built from the device name at creation and then frozen, so renaming the
-    device to "Portillon capteur mouvement" leaves every one of its entities
-    still called after whatever it was before. Slugified, so that a keyword
-    written the way an entity id is written -- `seche_serviette` -- still finds
-    a device called "Sèche-serviette salon".
+    Keywords search the `entity_id` and nothing else. Searching the device's
+    name as well was tried, to catch a device renamed after its entities were
+    created, and had to come out: a Zigbee motion sensor is a multi-sensor, so
+    a device called "Capteur mouvement bureau" made the keyword `mouvement`
+    match its temperature, illuminance and battery entities too. That is a
+    systematic false positive on nearly every sensor, traded for an occasional
+    true one -- and the occasional one is what the device class signal is for.
 
     The domain prefix is part of the `entity_id`, so `automation.` on its own
     scopes a rule to every automation -- which is also why automations, scripts
@@ -146,7 +146,9 @@ def missing_labels(
     if entity_category is not None and not rule.get(CONF_INCLUDE_TECHNICAL):
         return []
 
-    by_keyword = any(keyword in haystack for keyword in rule.get(CONF_KEYWORDS, ()))
+    by_keyword = any(
+        keyword in entity_id for keyword in rule.get(CONF_KEYWORDS, ())
+    )
     by_class = device_class is not None and device_class in rule.get(
         CONF_DEVICE_CLASSES, ()
     )

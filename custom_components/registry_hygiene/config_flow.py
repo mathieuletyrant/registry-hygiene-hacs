@@ -233,17 +233,33 @@ class LabelRuleSubentryFlow(ConfigSubentryFlow):
         )
 
 
+def _summary(items: list[str], cap: int = 2) -> str:
+    shown = ", ".join(items[:cap])
+    return f"{shown} (+{len(items) - cap})" if len(items) > cap else shown
+
+
 def _rule_title(hass: HomeAssistant, data: dict[str, Any]) -> str:
-    """What the rule's row reads as: `Sécurité \u2190 contact, mouvement, fumee`."""
+    """What the rule's row reads as.
+
+    `Securite <- classes: motion, occupancy (+3) - words: mouvement (+6)`.
+
+    The two groups are named, and each carries its own count, because the first
+    version of this ran them into one list: a reader -- and then an assistant
+    with access to the instance -- saw "motion, occupancy, smoke, +7" and
+    concluded the rule had ten device classes on it. It had five, and five
+    words. A summary that can be read as the wrong fact is worse than a longer
+    one.
+    """
     registry = lr.async_get(hass)
     names = [
         found.name if (found := registry.async_get_label(label)) else label
         for label in data[CONF_LABELS]
     ]
 
-    recognised = list(data[CONF_DEVICE_CLASSES]) + list(data[CONF_KEYWORDS])
-    shown = ", ".join(recognised[:3])
-    if len(recognised) > 3:
-        shown += f", +{len(recognised) - 3}"
+    groups = []
+    if classes := list(data.get(CONF_DEVICE_CLASSES, [])):
+        groups.append(f"classes: {_summary(classes)}")
+    if keywords := list(data.get(CONF_KEYWORDS, [])):
+        groups.append(f"words: {_summary(keywords)}")
 
-    return f"{', '.join(names)} \u2190 {shown}"
+    return f"{', '.join(names)} \u2190 {' \u00b7 '.join(groups)}"

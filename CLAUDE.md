@@ -60,9 +60,20 @@ class is what the source integration set, so it finds an entity whose name says
 nothing -- class `motion`, called `hall_detection`. A word finds what no class
 expresses -- `linky`, `interrupteur`, `homelab` -- because those are facts about
 the installation, not the hardware. Dropping either one was tried and was wrong
-both times. Words are plain substrings, matched against the entity id *and* the
-slugified device name: an entity id is built from the device name once and then
-frozen, so a renamed device is only findable through the name.
+both times.
+
+Words are plain substrings and match the **entity id only**. Matching the
+device's name as well was tried and reverted: a Zigbee motion sensor is a
+multi-sensor, so "Capteur mouvement bureau" made `mouvement` match its
+temperature, illuminance and battery entities -- 34 repairs on one instance,
+against sensors already correctly labelled. `tests/test_labels.py` holds that
+case.
+
+**The rule row's title names its two groups and counts each.** The first
+version ran classes and words into one list, and "motion, occupancy, smoke, +7"
+was read -- by a person and then by an assistant with access to the instance --
+as ten device classes. It was five and five. A summary that can be read as the
+wrong fact is worse than a longer one.
 
 **Only the label repair is fixable.** A rule already says which labels to
 apply, so its flow is one button. An area is a judgment, and a dropdown inside

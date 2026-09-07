@@ -141,15 +141,18 @@ def test_a_device_class_reaches_an_entity_no_word_would(violations):
     assert len(found) == 1
 
 
-def test_the_device_name_is_searched_as_well(violations):
-    """And slugified, or a keyword written like an entity id would never find
-    a device somebody called "Sèche-serviette salon".
+def test_a_secondary_entity_of_a_matched_device_is_left_alone(violations):
+    """The regression that sent 34 repairs at somebody's climate sensors.
+
+    A Zigbee motion sensor is a multi-sensor. While the device's name was
+    searched too, `mouvement` matched "Capteur mouvement bureau" and every
+    entity hanging off it -- temperature included, already correctly labelled
+    `climat`, and asked for `securite`.
     """
-    rule = dict(MOTION_RULE, keywords=["seche_serviette"])
     found = violations(
-        [entity(entity_id="climate.old_name", device_id="dev1")],
-        {"sub1": rule},
-        device_name="Sèche-serviette salon",
+        [entity(entity_id="sensor.bureau_temperature", device_id="dev1")],
+        {"sub1": MOTION_RULE},
+        device_name="Capteur mouvement bureau",
     )
 
-    assert len(found) == 1
+    assert found == {}

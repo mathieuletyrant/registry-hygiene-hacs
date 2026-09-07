@@ -40,7 +40,7 @@
           },
           "data_description": {
             "device_classes": "The reliable half. An entity of class `motion` may well be called `binary_sensor.hall_detection`, which no word would find. Only the classes your instance actually uses are offered.",
-            "keywords": "For everything a device class cannot say — `zigbee2mqtt`, `homelab`, `nas`, `printer`. Matched anywhere in the entity id or in the device's name; type one, press enter, type the next. Plain words, not patterns. The domain prefix counts, so `automation.` on its own scopes a rule to every automation.",
+            "keywords": "For everything a device class cannot say — `zigbee2mqtt`, `homelab`, `nas`, `printer`. Matched anywhere in the entity id; type one, press enter, type the next. Plain words, not patterns. The domain prefix counts, so `automation.` on its own scopes a rule to every automation.",
             "labels": "All of them. An entity missing two gets one repair naming both.",
             "include_technical": "Off for most rules: a motion detector's battery sensor has no business carrying `security`. On for a rule that is about exactly those — `battery`, `firmware`, `update`."
           }
@@ -56,7 +56,7 @@
           },
           "data_description": {
             "device_classes": "The reliable half. An entity of class `motion` may well be called `binary_sensor.hall_detection`, which no word would find. Only the classes your instance actually uses are offered.",
-            "keywords": "For everything a device class cannot say — `zigbee2mqtt`, `homelab`, `nas`, `printer`. Matched anywhere in the entity id or in the device's name; type one, press enter, type the next. Plain words, not patterns. The domain prefix counts, so `automation.` on its own scopes a rule to every automation.",
+            "keywords": "For everything a device class cannot say — `zigbee2mqtt`, `homelab`, `nas`, `printer`. Matched anywhere in the entity id; type one, press enter, type the next. Plain words, not patterns. The domain prefix counts, so `automation.` on its own scopes a rule to every automation.",
             "labels": "All of them. An entity missing two gets one repair naming both.",
             "include_technical": "Off for most rules: a motion detector's battery sensor has no business carrying `security`. On for a rule that is about exactly those — `battery`, `firmware`, `update`."
           }

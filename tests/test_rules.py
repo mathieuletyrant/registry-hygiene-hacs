@@ -134,14 +134,14 @@ def rule(
 
 def missing(
     r=None,
-    haystack="binary_sensor.hall_mouvement",
+    entity_id="binary_sensor.hall_mouvement",
     device_class=None,
     entity_category=None,
     labels=frozenset(),
     device_labels=frozenset(),
 ):
     return missing_labels(
-        r or rule(), haystack, device_class, entity_category, labels, device_labels
+        r or rule(), entity_id, device_class, entity_category, labels, device_labels
     )
 
 
@@ -159,7 +159,7 @@ def test_a_word_matches_anywhere_in_the_id():
 
 
 def test_a_non_matching_entity_is_left_alone():
-    assert missing(haystack="light.cuisine") == []
+    assert missing(entity_id="light.cuisine") == []
 
 
 def test_a_device_class_recognises_what_no_word_would():
@@ -182,11 +182,15 @@ def test_either_signal_is_enough_and_neither_overrules_the_other():
     assert missing(both, "light.cuisine", "illuminance") == []
 
 
-def test_a_word_reaches_the_device_name_too():
-    """An entity id is built from the device name once and then frozen, so a
-    device renamed afterwards is only findable through the name.
+def test_a_word_does_not_reach_the_device_s_name():
+    """Searching the device name as well was tried and taken out. A Zigbee
+    motion sensor is a multi-sensor: a device called "Capteur mouvement
+    bureau" made the keyword `mouvement` match its temperature, illuminance
+    and battery entities too -- a systematic false positive on nearly every
+    sensor, traded for the occasional renamed device that the device class
+    signal already covers.
     """
-    assert missing(haystack="binary_sensor.old_id occupancy_portillon_mouvement")
+    assert missing(entity_id="sensor.bureau_temperature") == []
 
 
 def test_the_label_on_the_entity_satisfies_the_rule():
@@ -212,7 +216,7 @@ def test_plumbing_is_out_of_scope_by_default():
     """A motion detector's battery sensor has no business carrying
     `securite` because the motion sensor does.
     """
-    assert missing(haystack="sensor.hall_mouvement_battery",
+    assert missing(entity_id="sensor.hall_mouvement_battery",
                    entity_category="diagnostic") == []
 
 

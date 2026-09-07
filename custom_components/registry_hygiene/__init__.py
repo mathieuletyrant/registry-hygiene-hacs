@@ -14,7 +14,6 @@ from homeassistant.helpers import (
 )
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.loader import async_get_integrations
-from homeassistant.util import slugify
 
 from .const import DOMAIN, ISSUE_MISSING_LABEL, OPTION_RULES, SUBENTRY_LABEL_RULE
 from .rules import (
@@ -213,18 +212,10 @@ def _label_violations(hass: HomeAssistant, label_rules: dict) -> dict:
         device = devices.async_get(entity.device_id) if entity.device_id else None
         device_labels = device.labels if device else frozenset()
 
-        # The device's name as well as the entity id, because an entity id is
-        # built from the device name once and then frozen: rename the device
-        # and only this half is current. Slugified so a keyword written like an
-        # entity id still finds "Sèche-serviette salon".
-        haystack = entity.entity_id
-        if device and (name := device.name_by_user or device.name):
-            haystack = f"{haystack} {slugify(name)}"
-
         for subentry_id, rule in label_rules.items():
             wanted = missing_labels(
                 rule,
-                haystack,
+                entity.entity_id,
                 entity.device_class or entity.original_device_class,
                 entity.entity_category,
                 entity.labels,
