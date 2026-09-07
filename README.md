@@ -12,7 +12,7 @@ finds under **Settings → Repairs**, alongside Home Assistant's own.
 
 ## ✨ What you get
 
-- 🏠 **Devices with no area** — every name is a link straight to the device
+- 🏠 **Devices with no area** — one repair per device, linking straight to its
   page, where you set the area once and all of its entities inherit it.
 
 More rules may follow; this list is what exists today rather than what is
@@ -48,18 +48,27 @@ Copy `custom_components/registry_hygiene` into your Home Assistant
 
 ## ⚙️ Configuration
 
-None, and that is a design goal rather than an omission. The rule exempts the
-devices Home Assistant itself marks as a service — a cloud account, a
-subscription, a bridge — and disabled ones. What is left is physical, and a
-physical object is somewhere, so there is no structural false positive for you
-to filter out by hand.
+None, and there is nothing to add later either — the two things a settings
+page would normally be for are already covered.
+
+**Filtering** is read off flags Home Assistant maintains itself: devices it
+marks as a service (a cloud account, a subscription), disabled ones, and
+integrations that declare themselves `system`, `hardware`, `service` or
+`helper` — Home Assistant talking about itself, the machine it runs on, a
+template. No list of domains for anyone to keep current.
+
+**The rest is you.** That filtering does not reach zero and cannot: a phone
+moves, a Bluetooth dongle is inside the machine, an integration invents a
+device to hang a button off. Each of those honestly declares itself a device,
+because it is one. So they get a repair each, and you press **Ignore** —
+Home Assistant remembers, per device, forever. That is the ignore list, and it
+needed no code.
 
 ## 🩺 What a report looks like
 
-A repair, not a notification: it stays until the registry is tidy, disappears
-on its own once it is, and never blocks anything. It re-checks whenever the
-device registry changes, so assigning an area makes it update in front of you
-rather than at the next restart.
+One repair per device, titled with its name. It re-checks whenever the device
+registry changes, so assigning an area makes the repair vanish in front of you
+rather than at the next restart. Nothing here ever blocks anything.
 
 ## 🤝 Contributing
 

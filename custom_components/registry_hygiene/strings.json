@@ -11,9 +11,9 @@
     }
   },
   "issues": {
-    "devices_without_area": {
-      "title": "{count} devices have no area",
-      "description": "These devices belong to no area, so neither do any of their entities — an entity inherits its area from its device. Automations and voice assistants that reason by room cannot see them.\n\n{devices}\n\nOpen a device and set its area; every one of its entities follows. For a long list, the [device dashboard](/config/devices/dashboard) lets you sort and assign several at once.\n\nDevices Home Assistant marks as a service — a cloud account, a subscription, a bridge — are never listed here: they are not anywhere, and that is correct."
+    "device_without_area": {
+      "title": "{name} has no area",
+      "description": "This device belongs to no area, so neither do any of its entities — an entity inherits its area from its device. Automations and voice assistants that reason by room cannot see them.\n\n[Open {name}](/config/devices/device/{device_id}) and set its area; every one of its entities follows.\n\nIf this device has no room — a phone, a USB dongle, something an integration invented to hang a button off — press **Ignore**. It will not be raised again."
     }
   }
 }

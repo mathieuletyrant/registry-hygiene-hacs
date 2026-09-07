@@ -48,8 +48,44 @@ def test_a_device_entry_carries_what_the_rule_reads():
     from homeassistant.helpers.device_registry import DeviceEntry
 
     # attrs, not a dataclass -- the annotations are the portable way to ask.
-    for field in ("area_id", "entry_type", "disabled_by", "name", "name_by_user"):
+    for field in (
+        "area_id",
+        "entry_type",
+        "disabled_by",
+        "name",
+        "name_by_user",
+    ):
         assert field in DeviceEntry.__annotations__
+
+    # Not in the annotations: it is a plain field on some releases and a
+    # derived property on others, so ask the class rather than the shape.
+    # This is what says which integration owns the device, and so what kind of
+    # thing the device is.
+    assert hasattr(DeviceEntry, "primary_config_entry")
+
+
+def test_an_integration_says_what_kind_of_thing_it_is():
+    """`integration_type` is what exempts the machine and the cloud account
+    without a deny-list of domains rotting in rules.py. The default matters as
+    much as the values: it is "hub", so a manifest that declares nothing stays
+    in the list rather than falling out of it.
+    """
+    from homeassistant.loader import Integration, async_get_integrations
+
+    assert hasattr(Integration, "integration_type")
+    assert callable(async_get_integrations)
+
+
+def test_an_ignored_issue_stays_ignored_when_it_is_raised_again():
+    """The repairs are recreated on every refresh, so a device somebody
+    ignored would come back on the next registry event if `async_get_or_create`
+    reset this. It does not -- its update path replaces everything *except*
+    `dismissed_version`. This pins that the concept still exists; the day it
+    does not, Ignore silently stops meaning anything.
+    """
+    from homeassistant.helpers.issue_registry import IssueEntry
+
+    assert "dismissed_version" in IssueEntry.__dataclass_fields__
 
 
 def test_the_device_registry_announces_its_changes():
@@ -87,13 +123,13 @@ def test_every_translation_carries_the_issue(path):
     """A repair whose key is missing renders as the key. Renaming the rule and
     forgetting one of three files is the way that happens.
     """
-    from custom_components.registry_hygiene import ISSUE_DEVICES_WITHOUT_AREA
+    from custom_components.registry_hygiene import ISSUE_DEVICE_WITHOUT_AREA
 
     with open(path, encoding="utf-8") as handle:
-        issue = json.load(handle)["issues"][ISSUE_DEVICES_WITHOUT_AREA]
+        issue = json.load(handle)["issues"][ISSUE_DEVICE_WITHOUT_AREA]
 
-    assert "{count}" in issue["title"]
-    assert "{devices}" in issue["description"]
+    assert "{name}" in issue["title"]
+    assert "{device_id}" in issue["description"]
 
 
 def test_the_declared_floor_is_the_one_the_tests_run_against():

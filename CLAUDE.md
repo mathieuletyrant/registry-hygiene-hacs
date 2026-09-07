@@ -17,13 +17,28 @@ longer read at all.
 | File | What it holds |
 | ---- | ------------- |
 | `rules.py` | The rules, as pure functions. **Never imports homeassistant** — that is the point of the file, and what keeps a rule arguable without a running instance. It compares `entry_type` against the bare string `"service"`; `tests/test_floor.py` pins that value so the import can stay out. |
-| `__init__.py` | Reads the registry, calls the rules, syncs the issues, and re-checks on `EVENT_DEVICE_REGISTRY_UPDATED` behind a `Debouncer` — a restart fires a burst of those. |
+| `__init__.py` | Reads the registry, calls the rules, reconciles the issues, and re-checks on `EVENT_DEVICE_REGISTRY_UPDATED` behind a `Debouncer` — a restart fires a burst of those. |
 | `config_flow.py` | One entry, one confirmation, nothing to fill in. |
 | `strings.json` + `translations/` | The text of every repair. `strings.json` and `translations/en.json` are the same file; keep `fr.json` in step. |
 
 A new rule is a function in `rules.py`, a caller in `__init__.py`, and an entry
 under `issues` in all three translation files. If a rule needs `hass` to decide,
 it does not belong in `rules.py`.
+
+## Two things not to undo
+
+**One issue per device, and reconcile — never delete then recreate.**
+`async_get_or_create` is the only path that leaves `dismissed_version` alone,
+so recreating a still-offending device's issue preserves the user's Ignore.
+`_prune_issues` deletes only what is no longer wanted, and `tests/test_issues.py`
+is what says so. Ignore is the whole ignore-list feature; there is no options
+flow because that button already is one.
+
+**`hub` is not exempt.** It is also Home Assistant's fallback for a manifest
+that declares no `integration_type`, so exempting it would quietly exempt
+everything unlabelled — `bluetooth` and `rpi_power` among them — along with
+every Hue bridge, which is a box on a shelf. `tests/test_rules.py` pins both
+edges.
 
 ## Tests
 

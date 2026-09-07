@@ -11,9 +11,9 @@
     }
   },
   "issues": {
-    "devices_without_area": {
-      "title": "{count} appareils sans pièce",
-      "description": "Ces appareils n'appartiennent à aucune pièce, donc aucune de leurs entités non plus — une entité hérite la pièce de son appareil. Les automatisations et les assistants vocaux qui raisonnent par pièce ne les voient pas.\n\n{devices}\n\nOuvrez un appareil et assignez-lui une pièce ; toutes ses entités suivent. Pour une longue liste, le [tableau des appareils](/config/devices/dashboard) permet de trier et d'en assigner plusieurs d'un coup.\n\nLes appareils que Home Assistant marque comme service — un compte cloud, un abonnement, un pont — ne sont jamais listés ici : ils ne sont nulle part, et c'est correct."
+    "device_without_area": {
+      "title": "{name} n'a pas de pièce",
+      "description": "Cet appareil n'appartient à aucune pièce, donc aucune de ses entités non plus — une entité hérite la pièce de son appareil. Les automatisations et les assistants vocaux qui raisonnent par pièce ne les voient pas.\n\n[Ouvrir {name}](/config/devices/device/{device_id}) et lui assigner une pièce ; toutes ses entités suivent.\n\nSi cet appareil n'a pas de pièce — un téléphone, un dongle USB, un appareil inventé par une intégration pour y accrocher un bouton — appuyez sur **Ignorer**. Il ne sera plus signalé."
     }
   }
 }
