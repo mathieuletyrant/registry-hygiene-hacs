@@ -92,9 +92,21 @@
       "title": "{name} n'a pas le label {labels}",
       "fix_flow": {
         "step": {
-          "confirm": {
-            "title": "Appliquer {labels} ?",
-            "description": "Une de vos règles de label correspond à cette entité et demande **{labels}**, qu'elle ne porte ni elle-même, ni via son appareil.\n\n`{entity_id}`\n\nEn continuant, le label est ajouté et ceux qu'elle porte déjà sont conservés. Rien d'autre ne change, et le label se retire à tout moment depuis les réglages de l'entité.\n\nSi c'est une exception voulue, fermez et appuyez plutôt sur **Ignorer**. Pour arrêter la règle entièrement, supprimez-la depuis la page de l'intégration."
+          "init": {
+            "title": "Appliquer {labels}",
+            "description": "Une règle de label demande **{labels}** sur `{entity_id}`, qui ne le porte ni elle-même, ni via son appareil.\n\nLabelliser l'appareil couvre ses {count} entités d'un coup — et c'est en général ce qu'il faut ici : les mots d'une règle cherchent dans l'identifiant de l'entité, et Home Assistant construit cet identifiant à partir du nom de l'appareil. Un détecteur nommé « Salon capteur mouvement » est la raison pour laquelle sa sonde de température est dans cette liste.",
+            "menu_options": {
+              "device": "Labelliser l'appareil — {device} ({count} entités)",
+              "entity": "Labelliser cette entité seulement"
+            }
+          },
+          "device": {
+            "title": "Labelliser {device} ?",
+            "description": "**{device}** recevra **{labels}**, en conservant les labels qu'il porte déjà. Ses {count} entités comptent alors comme le portant, donc toutes les réparations que cette règle a levées contre elles disparaissent.\n\nRien d'autre ne change, et le label se retire à tout moment depuis la page de l'appareil."
+          },
+          "entity": {
+            "title": "Labelliser cette entité ?",
+            "description": "`{entity_id}` recevra **{labels}**, en conservant ceux qu'elle porte déjà. Rien d'autre ne change, et le label se retire à tout moment depuis les réglages de l'entité.\n\nSi cette entité est une exception voulue, fermez et appuyez plutôt sur **Ignorer**."
           }
         }
       }

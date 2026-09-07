@@ -114,8 +114,18 @@ scripts and helpers need nothing special to be reachable.
 
 Every entity a rule recognises, and which carries none of its labels — neither
 itself nor on its device — gets a repair, with a **Fix** button that applies
-them. The rule already says which labels, so there is nothing to choose: just a
-confirmation naming what will be written.
+them. The rule already says which labels, so there is nothing to choose about
+*what* — only about *where*, and the button asks:
+
+> **Label the device — Salon capteur mouvement (9 entities)**
+> Label only this entity
+
+**Take the device, usually.** Words match the entity id, and Home Assistant
+builds that id out of the device's name — so a detector called "Salon capteur
+mouvement" puts `mouvement` into `sensor.salon_capteur_mouvement_temperature`
+just as surely as into its occupancy entity. On one instance fifteen repairs
+were three devices. A rule counts a label on the device as carried, so one
+press settles all of them.
 
 **Entities here, devices above**, on purpose. An entity inherits its area from
 its device, so the area question is only ever about the device — but a rule

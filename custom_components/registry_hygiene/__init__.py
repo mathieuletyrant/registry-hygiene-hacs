@@ -175,6 +175,21 @@ def _device_name(device) -> str:
     return device.name_by_user or device.name or device.id
 
 
+def _entity_name(entity, device) -> str:
+    """The device's name and the entity's, because the entity's alone is not a
+    name.
+
+    On a multi-sensor the entity names are `Manipulation`, `Personne`,
+    `Véhicule`, `Animal` -- accurate, generic, and identical across every such
+    device on the instance. A repairs page showing four rows called
+    "Manipulation" says nothing about which four things need attention.
+    """
+    own = entity.name or entity.original_name
+    if device is None:
+        return own or entity.entity_id
+    return f"{_device_name(device)} · {own}" if own else _device_name(device)
+
+
 def _prune_issues(hass: HomeAssistant, keep: set[str]) -> None:
     """Drop every issue of ours that is not in `keep`.
 
@@ -227,15 +242,22 @@ def _label_violations(hass: HomeAssistant, label_rules: dict) -> dict:
             found[f"{ISSUE_MISSING_LABEL}_{subentry_id}_{entity.id}"] = (
                 ISSUE_MISSING_LABEL,
                 {
-                    "name": entity.name or entity.original_name or entity.entity_id,
+                    "name": _entity_name(entity, device),
                     "entity_id": entity.entity_id,
                     "labels": ", ".join(_name(label) for label in wanted),
                 },
                 # What the fix flow needs to do the work, and nothing more: it
                 # re-reads the entity itself, so a registry that moved between
                 # the repair being raised and the button being pressed does not
-                # get written back stale.
-                {"entity_id": entity.entity_id, "labels": wanted},
+                # get written back stale. The device is there so the flow can
+                # offer to label it instead -- which on a multi-sensor is the
+                # answer, since one label there settles every one of its
+                # entities at once.
+                {
+                    "entity_id": entity.entity_id,
+                    "labels": wanted,
+                    "device_id": device.id if device else None,
+                },
             )
 
     return found

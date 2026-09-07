@@ -259,11 +259,15 @@ def test_every_translation_carries_every_rule(path):
     assert "description" not in label_rule
 
     # So the Fix dialog is where it has to name what it is about to write, or
-    # the button asks for consent to something it never said.
-    confirm = label_rule["fix_flow"]["step"]["confirm"]
-    assert "{labels}" in confirm["title"]
-    assert "{labels}" in confirm["description"]
-    assert "{entity_id}" in confirm["description"]
+    # the button asks for consent to something it never said. Three screens:
+    # the choice, and one confirmation per grain.
+    steps = label_rule["fix_flow"]["step"]
+    assert set(steps["init"]["menu_options"]) == {"device", "entity"}
+    assert "{count}" in steps["init"]["menu_options"]["device"]
+    for step in ("device", "entity"):
+        assert "{labels}" in steps[step]["description"]
+    assert "{entity_id}" in steps["entity"]["description"]
+    assert "{device}" in steps["device"]["description"]
 
     # The subentry dialog: without these the Add button opens a form whose
     # every field is labelled with its own key.

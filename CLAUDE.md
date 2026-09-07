@@ -63,11 +63,17 @@ the installation, not the hardware. Dropping either one was tried and was wrong
 both times.
 
 Words are plain substrings and match the **entity id only**. Matching the
-device's name as well was tried and reverted: a Zigbee motion sensor is a
-multi-sensor, so "Capteur mouvement bureau" made `mouvement` match its
-temperature, illuminance and battery entities -- 34 repairs on one instance,
-against sensors already correctly labelled. `tests/test_labels.py` holds that
-case.
+slugified device name as well was tried and reverted -- but note what that did
+*not* fix: an entity id is built from the device name anyway, so a multi-sensor
+still drags all of its entities into a rule that names its device. That is
+inherent to substring matching, which is also what makes `clim` find
+`climatisation`, and it is why the fix flow offers the device grain rather than
+why the matcher should change.
+
+The failure mode to know is a keyword that is a prefix of an unrelated word.
+`temper`, typed for `tamper`, matched every `_temperature` entity on an
+instance -- 34 repairs, and two confident wrong diagnoses before anyone read
+the stored subentry.
 
 **The rule row's title names its two groups and counts each.** The first
 version ran classes and words into one list, and "motion, occupancy, smoke, +7"
@@ -75,8 +81,13 @@ was read -- by a person and then by an assistant with access to the instance --
 as ten device classes. It was five and five. A summary that can be read as the
 wrong fact is worse than a longer one.
 
-**Only the label repair is fixable.** A rule already says which labels to
-apply, so its flow is one button. An area is a judgment, and a dropdown inside
+**Only the label repair is fixable, and its flow offers two grains.** A rule
+already says which labels to apply, so nothing is chosen except where they go.
+The device option is not a courtesy: keywords match the entity id, Home
+Assistant builds that id from the device name, so a detector called "Salon
+capteur mouvement" drags its temperature and illuminance entities into a
+security rule. Fifteen repairs on one instance were three devices, and a rule
+counts a label on the device as carried. An area is a judgment, and a dropdown inside
 a repair dialog would be a worse copy of the one on the device page — that is
 why `_async_sync_issues` passes `data=None` for the device checks and lets
 `is_fixable` follow from it.

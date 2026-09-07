@@ -65,7 +65,10 @@ def violations(monkeypatch):
             "async_get",
             lambda _h: SimpleNamespace(
                 async_get=lambda _id: SimpleNamespace(
-                    labels=device_labels, name=device_name, name_by_user=None
+                    labels=device_labels,
+                    name=device_name,
+                    name_by_user=None,
+                    id="dev1",
                 )
             ),
         )
@@ -88,6 +91,8 @@ def test_a_matching_entity_without_the_label_is_reported(violations):
     (translation_key, placeholders, fix_data), = found.values()
     assert translation_key == "entity_missing_label"
     assert placeholders["entity_id"] == "binary_sensor.hall_mouvement"
+    # No device on this one, so the entity's own name has to stand alone.
+    assert placeholders["name"] == "Hall"
     # The label's name, not the id the selector stored -- "Security" is what
     # the user called it, `label_security` is bookkeeping.
     assert placeholders["labels"] == "Security"
@@ -95,6 +100,7 @@ def test_a_matching_entity_without_the_label_is_reported(violations):
     assert fix_data == {
         "entity_id": "binary_sensor.hall_mouvement",
         "labels": ["label_security"],
+        "device_id": None,
     }
 
 
@@ -156,3 +162,18 @@ def test_a_secondary_entity_of_a_matched_device_is_left_alone(violations):
     )
 
     assert found == {}
+
+
+def test_the_title_names_the_device_as_well(violations):
+    """Four rows called "Manipulation" name nothing. The entity names on a
+    multi-sensor are generic and identical across every one of them.
+    """
+    found = violations(
+        [entity(device_id="dev1")],
+        {"sub1": MOTION_RULE},
+        device_name="Entrée mouvement",
+    )
+
+    placeholders = next(iter(found.values()))[1]
+
+    assert placeholders["name"] == "Entrée mouvement · Hall"

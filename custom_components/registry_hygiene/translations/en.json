@@ -92,9 +92,21 @@
       "title": "{name} is missing the label {labels}",
       "fix_flow": {
         "step": {
-          "confirm": {
-            "title": "Apply {labels}?",
-            "description": "One of your label rules matches this entity and asks for **{labels}**, which it carries neither itself nor on its device.\n\n`{entity_id}`\n\nContinue and the label is added, keeping any it already has. Nothing else about the entity changes, and you can remove it again from the entity's settings at any time.\n\nIf this one is a deliberate exception, close this and press **Ignore** instead. To stop the rule entirely, delete it from the integration page."
+          "init": {
+            "title": "Apply {labels}",
+            "description": "A label rule asks for **{labels}** on `{entity_id}`, which carries it neither itself nor on its device.\n\nLabel the device and every one of its {count} entities is covered at once — usually what you want here, because a rule's words match the entity id and Home Assistant builds that id out of the device's name. A detector called “Salon capteur mouvement” is why its temperature sensor is on this list.",
+            "menu_options": {
+              "device": "Label the device — {device} ({count} entities)",
+              "entity": "Label only this entity"
+            }
+          },
+          "device": {
+            "title": "Label {device}?",
+            "description": "**{device}** will be given **{labels}**, keeping any labels it already has. All {count} of its entities count as carrying it, so every repair this rule raised against them goes away.\n\nNothing else about the device changes, and you can remove the label again from its page at any time."
+          },
+          "entity": {
+            "title": "Label this entity?",
+            "description": "`{entity_id}` will be given **{labels}**, keeping any it already has. Nothing else changes, and you can remove the label again from the entity's settings at any time.\n\nIf this entity is a deliberate exception, close this and press **Ignore** instead."
           }
         }
       }
