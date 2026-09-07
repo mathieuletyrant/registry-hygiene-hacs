@@ -7,6 +7,7 @@ tempting mistake is to widen the exemptions until nothing is ever reported.
 """
 
 from custom_components.registry_hygiene.const import (
+    CONF_DEVICE_CLASSES,
     CONF_INCLUDE_TECHNICAL,
     CONF_KEYWORDS,
     CONF_LABELS,
@@ -117,9 +118,15 @@ def test_a_disabled_entity_cannot():
     assert not is_a_real_entity("integration")
 
 
-def rule(keywords=("mouvement", "contact"), labels=("securite",), technical=False):
+def rule(
+    keywords=("mouvement", "contact"),
+    device_classes=(),
+    labels=("securite",),
+    technical=False,
+):
     return {
         CONF_KEYWORDS: list(keywords),
+        CONF_DEVICE_CLASSES: list(device_classes),
         CONF_LABELS: list(labels),
         CONF_INCLUDE_TECHNICAL: technical,
     }
@@ -127,13 +134,14 @@ def rule(keywords=("mouvement", "contact"), labels=("securite",), technical=Fals
 
 def missing(
     r=None,
-    entity_id="binary_sensor.hall_mouvement",
+    haystack="binary_sensor.hall_mouvement",
+    device_class=None,
     entity_category=None,
     labels=frozenset(),
     device_labels=frozenset(),
 ):
     return missing_labels(
-        r or rule(), entity_id, entity_category, labels, device_labels
+        r or rule(), haystack, device_class, entity_category, labels, device_labels
     )
 
 
@@ -151,7 +159,34 @@ def test_a_word_matches_anywhere_in_the_id():
 
 
 def test_a_non_matching_entity_is_left_alone():
-    assert missing(entity_id="light.cuisine") == []
+    assert missing(haystack="light.cuisine") == []
+
+
+def test_a_device_class_recognises_what_no_word_would():
+    """The case that earns the second signal: the class is right, the name
+    says nothing. An integration sets `motion`; the entity is called
+    `detection`.
+    """
+    by_class = rule(keywords=[], device_classes=["motion", "occupancy"])
+
+    assert missing(by_class, "binary_sensor.hall_detection", "motion") == ["securite"]
+    assert missing(by_class, "binary_sensor.hall_detection", "door") == []
+
+
+def test_either_signal_is_enough_and_neither_overrules_the_other():
+    """A rule carrying both is one rule with two ways of being recognised."""
+    both = rule(keywords=["mouvement"], device_classes=["motion"])
+
+    assert missing(both, "binary_sensor.hall_mouvement", None) == ["securite"]
+    assert missing(both, "binary_sensor.hall_detection", "motion") == ["securite"]
+    assert missing(both, "light.cuisine", "illuminance") == []
+
+
+def test_a_word_reaches_the_device_name_too():
+    """An entity id is built from the device name once and then frozen, so a
+    device renamed afterwards is only findable through the name.
+    """
+    assert missing(haystack="binary_sensor.old_id occupancy_portillon_mouvement")
 
 
 def test_the_label_on_the_entity_satisfies_the_rule():
@@ -177,7 +212,7 @@ def test_plumbing_is_out_of_scope_by_default():
     """A motion detector's battery sensor has no business carrying
     `securite` because the motion sensor does.
     """
-    assert missing(entity_id="sensor.hall_mouvement_battery",
+    assert missing(haystack="sensor.hall_mouvement_battery",
                    entity_category="diagnostic") == []
 
 
@@ -193,3 +228,14 @@ def test_a_rule_can_opt_into_plumbing():
 
     assert missing(maintenance, "sensor.hall_battery",
                    entity_category="diagnostic") == ["maintenance"]
+
+
+def test_the_domain_prefix_is_part_of_the_id():
+    """Which is how a rule gets scoped to a domain without a field for it, and
+    why automations, scripts and helpers are already reachable: they are
+    entities, and their id starts with what they are.
+    """
+    only_automations = rule(keywords=["automation."], labels=["revue"])
+
+    assert missing(only_automations, "automation.alarme_absence") == ["revue"]
+    assert missing(only_automations, "binary_sensor.hall_mouvement") == []

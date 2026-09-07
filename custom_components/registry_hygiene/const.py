@@ -19,6 +19,7 @@ OPTION_RULES = "rules"
 SUBENTRY_LABEL_RULE = "label_rule"
 
 CONF_KEYWORDS = "keywords"
+CONF_DEVICE_CLASSES = "device_classes"
 CONF_LABELS = "labels"
 CONF_INCLUDE_TECHNICAL = "include_technical"
 

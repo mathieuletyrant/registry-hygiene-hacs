@@ -62,8 +62,24 @@ def draw() -> Image.Image:
     return icon
 
 
+def trimmed(icon: Image.Image) -> Image.Image:
+    """Crop to the drawn pixels, then re-square.
+
+    home-assistant/brands rejects images padded with transparency, and the
+    tilted tile makes the drawn area neither centred nor square on its own --
+    so measure it rather than guess a margin.
+    """
+    content = icon.crop(icon.getbbox())
+    side = max(content.size)
+    square = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    square.alpha_composite(
+        content, ((side - content.width) // 2, (side - content.height) // 2)
+    )
+    return square
+
+
 def main() -> None:
-    icon = draw()
+    icon = trimmed(draw())
     out = Path(__file__).resolve().parents[1] / "icons"
     out.mkdir(exist_ok=True)
 

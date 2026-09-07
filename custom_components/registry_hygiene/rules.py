@@ -4,7 +4,12 @@ free of it -- and so a rule can be argued about without a running instance.
 
 from __future__ import annotations
 
-from .const import CONF_INCLUDE_TECHNICAL, CONF_KEYWORDS, CONF_LABELS
+from .const import (
+    CONF_DEVICE_CLASSES,
+    CONF_INCLUDE_TECHNICAL,
+    CONF_KEYWORDS,
+    CONF_LABELS,
+)
 
 RULE_AREA = "device_without_area"
 RULE_LABEL = "device_without_label"
@@ -99,21 +104,39 @@ def is_a_real_entity(disabled_by):
     return disabled_by is None
 
 
-def missing_labels(rule, entity_id, entity_category, labels, device_labels):
+def missing_labels(
+    rule, haystack, device_class, entity_category, labels, device_labels
+):
     """Which of the rule's labels this entity ought to carry and does not.
 
-    Keywords against the `entity_id`, not a pattern language. A real policy --
-    seven rules, on a real instance -- turned out to be alternations of plain
-    substrings every time; the two that looked like regular expressions were
-    each already covered by a literal in the same rule. Substrings need no
-    validating, cannot backtrack catastrophically over a few thousand entity
-    ids, and are a field anyone can fill in.
+    Two matchers, in OR, because they fail in opposite directions.
 
-    The `entity_id` rather than the friendly name because it is the stable one,
-    and because Home Assistant builds it out of the device class for most
-    integrations: `sensor.salon_temperature`, `sensor.x_battery`,
-    `binary_sensor.y_motion`. A keyword reaches those without a second matcher
-    for device classes.
+    A **device class** is set by the integration that created the entity, so it
+    is a fact about the hardware rather than about how somebody named things.
+    Where it exists it is the better signal: an entity of class `motion` may
+    perfectly well be called `binary_sensor.hall_detection`, and no keyword
+    would find it.
+
+    A **keyword** reaches everything a device class cannot say. On the policy
+    this was built against, half the concepts had no class at all -- `linky`,
+    `interrupteur`, `seche_serviette`, `homelab`, `zigbee2mqtt` -- because they
+    are facts about that installation, not about the hardware. Plain substrings
+    rather than patterns: every rule in that policy was an alternation of
+    literals, and the two that looked like regular expressions were each
+    already covered by a literal beside them. Substrings need no validating and
+    cannot backtrack over thousands of ids.
+
+    `haystack` is the entity id and the slug of its device's name, joined. The
+    device name is there because it is the fresher of the two: an entity id is
+    built from the device name at creation and then frozen, so renaming the
+    device to "Portillon capteur mouvement" leaves every one of its entities
+    still called after whatever it was before. Slugified, so that a keyword
+    written the way an entity id is written -- `seche_serviette` -- still finds
+    a device called "Sèche-serviette salon".
+
+    The domain prefix is part of the `entity_id`, so `automation.` on its own
+    scopes a rule to every automation -- which is also why automations, scripts
+    and helpers need nothing special to be reachable.
 
     The label counts whether it sits on the entity or on its device, so both
     styles work: label the multi-sensor once and its three entities are
@@ -123,7 +146,15 @@ def missing_labels(rule, entity_id, entity_category, labels, device_labels):
     if entity_category is not None and not rule.get(CONF_INCLUDE_TECHNICAL):
         return []
 
-    if not any(keyword in entity_id for keyword in rule[CONF_KEYWORDS]):
+    by_keyword = any(keyword in haystack for keyword in rule.get(CONF_KEYWORDS, ()))
+    by_class = device_class is not None and device_class in rule.get(
+        CONF_DEVICE_CLASSES, ()
+    )
+
+    # Either signal is enough. They fail in opposite directions, so a rule that
+    # carries both is not two rules -- it is one rule with two ways of being
+    # recognised, and neither overrules the other.
+    if not (by_keyword or by_class):
         return []
 
     carried = set(labels) | set(device_labels)

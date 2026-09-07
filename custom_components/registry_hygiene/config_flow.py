@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er, label_registry as lr, selector
 
 from .const import (
+    CONF_DEVICE_CLASSES,
     CONF_INCLUDE_TECHNICAL,
     CONF_KEYWORDS,
     CONF_LABELS,
@@ -94,18 +95,30 @@ class RegistryHygieneOptionsFlow(OptionsFlow):
 
 
 
-def _entity_ids(hass: HomeAssistant) -> list[str]:
-    """Every entity id a rule could match."""
-    return [
-        entity.entity_id
-        for entity in er.async_get(hass).entities.values()
-        if is_a_real_entity(entity.disabled_by)
-    ]
+def _matchable(hass: HomeAssistant) -> tuple[list[str], list[str]]:
+    """What a rule could match on this instance: entity ids, and the device
+    classes actually in use.
+
+    The classes are read off the registry rather than off a table of every
+    class Home Assistant defines: the table would need maintaining as core
+    grows classes, and would offer choices matching nothing here.
+    """
+    entity_ids = []
+    classes = set()
+
+    for entity in er.async_get(hass).entities.values():
+        if not is_a_real_entity(entity.disabled_by):
+            continue
+        entity_ids.append(entity.entity_id)
+        if found := entity.device_class or entity.original_device_class:
+            classes.add(found)
+
+    return entity_ids, sorted(classes)
 
 
 class LabelRuleSubentryFlow(ConfigSubentryFlow):
-    """One rule: entities whose id contains any of these words carry these
-    labels.
+    """One rule: entities recognised by a device class or by a word carry
+    these labels.
 
     A subentry rather than a list inside the options, because that is what
     gives the rule its own row, its own Add button and its own delete -- the
@@ -116,31 +129,35 @@ class LabelRuleSubentryFlow(ConfigSubentryFlow):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Ask which words the rule is about, and which labels it requires."""
+        """Ask what the rule recognises, and which labels it requires."""
         errors: dict[str, str] = {}
+        entity_ids, classes = _matchable(self.hass)
 
         if user_input is not None:
             keywords = sorted(
                 {
                     word.strip().lower()
-                    for word in user_input[CONF_KEYWORDS]
+                    for word in user_input.get(CONF_KEYWORDS, [])
                     if word.strip()
                 }
             )
-            entity_ids = _entity_ids(self.hass)
+            device_classes = sorted(set(user_input.get(CONF_DEVICE_CLASSES, [])))
 
-            if not keywords:
-                errors[CONF_KEYWORDS] = "no_keywords"
+            if not keywords and not device_classes:
+                errors["base"] = "nothing_to_match"
             # A rule that matches nothing does not look like a mistake from
             # outside -- it looks exactly like a rule everything already
             # satisfies. This form is the only place that can say otherwise.
-            elif not any(
+            # Device classes need no such check: they were picked from what
+            # this instance has.
+            elif not device_classes and not any(
                 keyword in entity_id for keyword in keywords for entity_id in entity_ids
             ):
                 errors[CONF_KEYWORDS] = "matches_nothing"
             else:
                 data = {
                     CONF_KEYWORDS: keywords,
+                    CONF_DEVICE_CLASSES: device_classes,
                     CONF_LABELS: user_input[CONF_LABELS],
                     CONF_INCLUDE_TECHNICAL: user_input.get(
                         CONF_INCLUDE_TECHNICAL, False
@@ -157,10 +174,13 @@ class LabelRuleSubentryFlow(ConfigSubentryFlow):
                 {
                     # A free-text multi-select is the chip input: type a word,
                     # press enter, type the next one.
-                    vol.Required(CONF_KEYWORDS): selector.SelectSelector(
+                    vol.Optional(CONF_KEYWORDS): selector.SelectSelector(
                         selector.SelectSelectorConfig(
                             options=[], multiple=True, custom_value=True
                         )
+                    ),
+                    vol.Optional(CONF_DEVICE_CLASSES): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=classes, multiple=True)
                     ),
                     vol.Required(CONF_LABELS): selector.LabelSelector(
                         selector.LabelSelectorConfig(multiple=True)
@@ -181,9 +201,9 @@ def _rule_title(hass: HomeAssistant, data: dict[str, Any]) -> str:
         for label in data[CONF_LABELS]
     ]
 
-    keywords = data[CONF_KEYWORDS]
-    shown = ", ".join(keywords[:3])
-    if len(keywords) > 3:
-        shown += f", +{len(keywords) - 3}"
+    recognised = list(data[CONF_DEVICE_CLASSES]) + list(data[CONF_KEYWORDS])
+    shown = ", ".join(recognised[:3])
+    if len(recognised) > 3:
+        shown += f", +{len(recognised) - 3}"
 
     return f"{', '.join(names)} \u2190 {shown}"

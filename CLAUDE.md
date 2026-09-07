@@ -55,12 +55,14 @@ every device the user had ignored, every time they touched the settings.
 `async_remove_entry` is the hook that fires only on real removal, and that is
 where they go.
 
-**Label rules match plain substrings, not patterns.** The policy this was
-built against was seven rules of alternated literals; the two that looked like
-regular expressions were each already covered by a literal in the same rule.
-Substrings need no validating and cannot backtrack over thousands of entity
-ids. They match the `entity_id`, which is also why there is no device-class
-matcher: Home Assistant already builds the class into the id.
+**A label rule has two matchers in OR, and both earn their place.** A device
+class is what the source integration set, so it finds an entity whose name says
+nothing -- class `motion`, called `hall_detection`. A word finds what no class
+expresses -- `linky`, `interrupteur`, `homelab` -- because those are facts about
+the installation, not the hardware. Dropping either one was tried and was wrong
+both times. Words are plain substrings, matched against the entity id *and* the
+slugified device name: an entity id is built from the device name once and then
+frozen, so a renamed device is only findable through the name.
 
 **Only the label repair is fixable.** A rule already says which labels to
 apply, so its flow is one button. An area is a judgment, and a dropdown inside

@@ -31,14 +31,16 @@
       "step": {
         "user": {
           "title": "Label rule",
-          "description": "Entities whose id contains any of these words must carry these labels. The label counts whether it sits on the entity or on its device, so labelling a multi-sensor once covers all of its entities.",
+          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id or its device's name.",
           "data": {
+            "device_classes": "Device classes",
             "keywords": "Words",
             "labels": "Required labels",
             "include_technical": "Include config and diagnostic entities"
           },
           "data_description": {
-            "keywords": "Plain words matched anywhere in the entity id — `motion`, `volet`, `linky`. Type one, press enter, type the next. Not patterns: a word is a word.",
+            "device_classes": "The reliable half. An entity of class `motion` may well be called `binary_sensor.hall_detection`, which no word would find. Only the classes your instance actually uses are offered.",
+            "keywords": "For everything a device class cannot say — `linky`, `interrupteur`, `seche_serviette`, `homelab`. Matched anywhere in the entity id or in the device's name; type one, press enter, type the next. Plain words, not patterns. The domain prefix counts, so `automation.` on its own scopes a rule to every automation.",
             "labels": "All of them. An entity missing two gets one repair naming both.",
             "include_technical": "Off for most rules: a motion detector's battery sensor has no business carrying `security`. On for a rule that is about exactly those — `battery`, `firmware`, `update`."
           }
@@ -46,7 +48,7 @@
       },
       "error": {
         "matches_nothing": "No entity on this instance contains any of those words, so the rule would never fire.",
-        "no_keywords": "A rule needs at least one word."
+        "nothing_to_match": "A rule needs at least one device class or one word."
       }
     }
   },

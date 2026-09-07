@@ -15,6 +15,7 @@ import pytest
 
 import custom_components.registry_hygiene as rh
 from custom_components.registry_hygiene.const import (
+    CONF_DEVICE_CLASSES,
     CONF_INCLUDE_TECHNICAL,
     CONF_KEYWORDS,
     CONF_LABELS,
@@ -22,6 +23,7 @@ from custom_components.registry_hygiene.const import (
 
 MOTION_RULE = {
     CONF_KEYWORDS: ["mouvement"],
+    CONF_DEVICE_CLASSES: [],
     CONF_LABELS: ["label_security"],
     CONF_INCLUDE_TECHNICAL: False,
 }
@@ -32,6 +34,7 @@ def entity(
     labels=frozenset(),
     entity_category=None,
     device_id=None,
+    device_class=None,
 ):
     return SimpleNamespace(
         id=entity_id.replace(".", "_"),
@@ -42,6 +45,8 @@ def entity(
         disabled_by=None,
         labels=labels,
         device_id=device_id,
+        device_class=None,
+        original_device_class=device_class,
     )
 
 
@@ -49,7 +54,7 @@ def entity(
 def violations(monkeypatch):
     """Run `_label_violations` over faked registries."""
 
-    def run(entities, rules, device_labels=frozenset()):
+    def run(entities, rules, device_labels=frozenset(), device_name=None):
         monkeypatch.setattr(
             rh.er,
             "async_get",
@@ -59,7 +64,9 @@ def violations(monkeypatch):
             rh.dr,
             "async_get",
             lambda _h: SimpleNamespace(
-                async_get=lambda _id: SimpleNamespace(labels=device_labels)
+                async_get=lambda _id: SimpleNamespace(
+                    labels=device_labels, name=device_name, name_by_user=None
+                )
             ),
         )
         monkeypatch.setattr(
@@ -119,3 +126,30 @@ def test_two_rules_about_one_entity_stay_apart(violations):
 def test_no_rules_means_no_walk(violations):
     """The registry is not read at all when nothing would be asked of it."""
     assert violations([entity()], {}) == {}
+
+
+def test_a_device_class_reaches_an_entity_no_word_would(violations):
+    """The second signal, through the walk: the class is set, the name is not
+    saying anything.
+    """
+    by_class = dict(MOTION_RULE, keywords=[], device_classes=["motion"])
+    found = violations(
+        [entity(entity_id="binary_sensor.hall_detection", device_class="motion")],
+        {"sub1": by_class},
+    )
+
+    assert len(found) == 1
+
+
+def test_the_device_name_is_searched_as_well(violations):
+    """And slugified, or a keyword written like an entity id would never find
+    a device somebody called "Sèche-serviette salon".
+    """
+    rule = dict(MOTION_RULE, keywords=["seche_serviette"])
+    found = violations(
+        [entity(entity_id="climate.old_name", device_id="dev1")],
+        {"sub1": rule},
+        device_name="Sèche-serviette salon",
+    )
+
+    assert len(found) == 1

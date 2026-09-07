@@ -224,6 +224,7 @@ def test_every_translation_carries_every_rule(path):
     happens; the rule ids are the translation keys, so this catches it.
     """
     from custom_components.registry_hygiene.const import (
+        CONF_DEVICE_CLASSES,
         CONF_INCLUDE_TECHNICAL,
         CONF_KEYWORDS,
         CONF_LABELS,
@@ -257,9 +258,14 @@ def test_every_translation_carries_every_rule(path):
     # The subentry dialog: without these the Add button opens a form whose
     # every field is labelled with its own key.
     subentry = strings["config_subentries"][SUBENTRY_LABEL_RULE]
-    for field in (CONF_KEYWORDS, CONF_LABELS, CONF_INCLUDE_TECHNICAL):
+    for field in (
+        CONF_KEYWORDS,
+        CONF_DEVICE_CLASSES,
+        CONF_LABELS,
+        CONF_INCLUDE_TECHNICAL,
+    ):
         assert subentry["step"]["user"]["data"][field]
-    for error in ("matches_nothing", "no_keywords"):
+    for error in ("matches_nothing", "nothing_to_match"):
         assert subentry["error"][error]
 
 
