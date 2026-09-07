@@ -45,6 +45,8 @@ known-first-party = ["homeassistant", "custom_components", "tests"]
 [tool.ruff.lint.per-file-ignores]
 # Asserts are what a test is, and a test function's name is its docstring.
 "tests/*" = ["S101", "D1"]
+# Operator tools run by hand, not shipped code: printing is their output.
+"scripts/*" = ["T20", "D1"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"

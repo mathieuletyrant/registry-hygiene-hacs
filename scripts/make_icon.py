@@ -69,7 +69,7 @@ def main() -> None:
 
     for name, size in (("icon.png", 256), ("icon@2x.png", 512)):
         icon.resize((size, size), Image.Resampling.LANCZOS).save(out / name)
-        print(f"wrote {out / name} ({size}x{size})")  # noqa: T201
+        print(f"wrote {out / name} ({size}x{size})")
 
 
 if __name__ == "__main__":

@@ -69,12 +69,11 @@
     },
     "entity_missing_label": {
       "title": "{name} n'a pas le label {labels}",
-      "description": "Une de vos règles de label correspond à cette entité et demande **{labels}** — qu'elle ne porte ni elle-même, ni via son appareil.\n\n`{entity_id}`\n\nAppuyez sur **Réparer** pour l'ajouter. La règle dit déjà quel label appliquer, il n'y a rien à choisir.\n\nSi c'est une exception voulue, appuyez plutôt sur **Ignorer**. Pour arrêter la règle entièrement, supprimez-la depuis la page de l'intégration.",
       "fix_flow": {
         "step": {
           "confirm": {
             "title": "Appliquer {labels} ?",
-            "description": "`{entity_id}` recevra le label **{labels}**, en conservant ceux qu'elle porte déjà. Rien d'autre ne change, et le label se retire à tout moment depuis les réglages de l'entité."
+            "description": "Une de vos règles de label correspond à cette entité et demande **{labels}**, qu'elle ne porte ni elle-même, ni via son appareil.\n\n`{entity_id}`\n\nEn continuant, le label est ajouté et ceux qu'elle porte déjà sont conservés. Rien d'autre ne change, et le label se retire à tout moment depuis les réglages de l'entité.\n\nSi c'est une exception voulue, fermez et appuyez plutôt sur **Ignorer**. Pour arrêter la règle entièrement, supprimez-la depuis la page de l'intégration."
           }
         }
       }

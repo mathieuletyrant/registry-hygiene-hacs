@@ -69,12 +69,11 @@
     },
     "entity_missing_label": {
       "title": "{name} is missing the label {labels}",
-      "description": "One of your label rules matches this entity, and asks for **{labels}** — which it carries neither itself nor on its device.\n\n`{entity_id}`\n\nPress **Fix** to add it. The rule already says which label to apply, so there is nothing to choose.\n\nIf this one is a deliberate exception, press **Ignore** instead. To stop the rule entirely, delete it from the integration page.",
       "fix_flow": {
         "step": {
           "confirm": {
             "title": "Apply {labels}?",
-            "description": "`{entity_id}` will be given the label **{labels}**, keeping any it already has. Nothing else about the entity changes, and you can remove the label again from its settings at any time."
+            "description": "One of your label rules matches this entity and asks for **{labels}**, which it carries neither itself nor on its device.\n\n`{entity_id}`\n\nContinue and the label is added, keeping any it already has. Nothing else about the entity changes, and you can remove it again from the entity's settings at any time.\n\nIf this one is a deliberate exception, close this and press **Ignore** instead. To stop the rule entirely, delete it from the integration page."
           }
         }
       }

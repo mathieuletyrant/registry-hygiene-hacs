@@ -243,10 +243,12 @@ def test_every_translation_carries_every_rule(path):
 
     label_rule = strings["issues"][ISSUE_MISSING_LABEL]
     assert "{labels}" in label_rule["title"]
-    assert "{entity_id}" in label_rule["description"]
+    # No `description` on a fixable issue: hassfest treats it and `fix_flow` as
+    # mutually exclusive, because the dialog opens straight into the flow.
+    assert "description" not in label_rule
 
-    # The Fix dialog has to name what it is about to write, or the button is
-    # asking for consent to something it did not say.
+    # So the Fix dialog is where it has to name what it is about to write, or
+    # the button asks for consent to something it never said.
     confirm = label_rule["fix_flow"]["step"]["confirm"]
     assert "{labels}" in confirm["title"]
     assert "{labels}" in confirm["description"]
