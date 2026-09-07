@@ -1,15 +1,23 @@
 # Registry Hygiene — Home Assistant integration
 
-Checks the entity registry against a set of hygiene rules and reports what it
-finds as Repairs. It reads registries and writes issues; it talks to no device,
-no network, no cloud.
+Checks the device registry against a set of hygiene rules and reports what it
+finds as Repairs. It reads the registry and writes issues; it talks to no
+device, no network, no cloud.
+
+**Devices, not entities**, and that was not the starting point. An entity
+inherits its area from its device, so the entity-level rule reported one
+unassigned light twelve times — once per entity it owns — and every one of the
+twelve was fixed by the same single click. On the author's instance it produced
+175 findings covering roughly a dozen real problems. The device grain is the
+same information, deduplicated, and each line is actionable. Entities are no
+longer read at all.
 
 ## Shape
 
 | File | What it holds |
 | ---- | ------------- |
-| `rules.py` | The rules, as pure functions. **Never imports homeassistant** — that is the point of the file, and what keeps a rule arguable without a running instance. |
-| `__init__.py` | Reads the registries, calls the rules, syncs the issues. |
+| `rules.py` | The rules, as pure functions. **Never imports homeassistant** — that is the point of the file, and what keeps a rule arguable without a running instance. It compares `entry_type` against the bare string `"service"`; `tests/test_floor.py` pins that value so the import can stay out. |
+| `__init__.py` | Reads the registry, calls the rules, syncs the issues, and re-checks on `EVENT_DEVICE_REGISTRY_UPDATED` behind a `Debouncer` — a restart fires a burst of those. |
 | `config_flow.py` | One entry, one confirmation, nothing to fill in. |
 | `strings.json` + `translations/` | The text of every repair. `strings.json` and `translations/en.json` are the same file; keep `fr.json` in step. |
 
@@ -35,10 +43,6 @@ Raising the floor means editing `requirements_test_min.txt` and `hacs.json`
 together, plus the Python paired with it in `.github/workflows/tests.yaml`.
 `tests/test_floor.py` fails if the first two disagree, and names the APIs the
 floor has to have.
-
-**The declared floor is provisional.** `2025.4.0` was inherited from a sibling
-project as a version known to install, not measured against what this
-integration needs. Settle it once the rule set is settled.
 
 ## Lint
 

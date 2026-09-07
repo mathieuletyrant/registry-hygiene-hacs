@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Registry Hygiene",
-        "description": "Rien à configurer. L'installation lance la vérification du registre des entités et signale ce qu'elle trouve dans Paramètres → Réparations."
+        "description": "Rien à configurer. L'installation lance la vérification du registre des appareils et signale ce qu'elle trouve dans Paramètres → Réparations."
       }
     },
     "abort": {
@@ -11,9 +11,9 @@
     }
   },
   "issues": {
-    "missing_area_entities": {
-      "title": "{count} entités sans pièce",
-      "description": "Ces entités n'appartiennent à aucune pièce, ni directement ni via leur appareil. Les automatisations et les assistants vocaux qui raisonnent par pièce ne les voient pas.\n\n{entities}\n\nAssignez une pièce à l'entité, ou à son appareil pour que toutes ses entités en héritent."
+    "devices_without_area": {
+      "title": "{count} appareils sans pièce",
+      "description": "Ces appareils n'appartiennent à aucune pièce, donc aucune de leurs entités non plus — une entité hérite la pièce de son appareil. Les automatisations et les assistants vocaux qui raisonnent par pièce ne les voient pas.\n\n{devices}\n\nOuvrez un appareil et assignez-lui une pièce ; toutes ses entités suivent. Pour une longue liste, le [tableau des appareils](/config/devices/dashboard) permet de trier et d'en assigner plusieurs d'un coup.\n\nLes appareils que Home Assistant marque comme service — un compte cloud, un abonnement, un pont — ne sont jamais listés ici : ils ne sont nulle part, et c'est correct."
     }
   }
 }

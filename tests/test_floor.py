@@ -9,11 +9,18 @@ out it has to be raised, says which call did it.
 """
 
 import importlib
+import inspect
 import json
 
 import pytest
 
 MODULES = ("config_flow", "rules")
+
+TRANSLATIONS = (
+    "custom_components/registry_hygiene/strings.json",
+    "custom_components/registry_hygiene/translations/en.json",
+    "custom_components/registry_hygiene/translations/fr.json",
+)
 
 
 @pytest.mark.parametrize("name", MODULES)
@@ -25,21 +32,68 @@ def test_the_integration_module_imports():
     assert importlib.import_module("custom_components.registry_hygiene")
 
 
+def test_a_service_device_is_spelled_service():
+    """rules.py compares `entry_type` against the bare string, so that the
+    rules stay importable without Home Assistant. That only holds while
+    `DeviceEntryType` is a StrEnum whose member is exactly "service" -- if it
+    ever stops being one, every service device starts getting flagged, quietly
+    and everywhere. This is the assertion that would notice.
+    """
+    from homeassistant.helpers.device_registry import DeviceEntryType
+
+    assert DeviceEntryType.SERVICE == "service"
+
+
+def test_a_device_entry_carries_what_the_rule_reads():
+    from homeassistant.helpers.device_registry import DeviceEntry
+
+    # attrs, not a dataclass -- the annotations are the portable way to ask.
+    for field in ("area_id", "entry_type", "disabled_by", "name", "name_by_user"):
+        assert field in DeviceEntry.__annotations__
+
+
+def test_the_device_registry_announces_its_changes():
+    """The repair re-checks on this event; without it, it is only ever as
+    fresh as the last restart.
+    """
+    from homeassistant.helpers import device_registry as dr
+
+    assert dr.EVENT_DEVICE_REGISTRY_UPDATED
+
+
+def test_the_debouncer_takes_a_cooldown_and_a_function():
+    """A restart fires a burst of registry events, and this is what absorbs
+    them instead of a hand-rolled timer.
+    """
+    from homeassistant.helpers.debounce import Debouncer
+
+    parameters = inspect.signature(Debouncer.__init__).parameters
+
+    for name in ("cooldown", "immediate", "function"):
+        assert name in parameters
+    assert hasattr(Debouncer, "async_shutdown")
+
+
 def test_the_issue_registry_takes_translated_placeholders():
-    """The repair's whole body is a translation plus a list of entity ids."""
+    """The repair's whole body is a translation plus a list of device links."""
     from homeassistant.helpers import issue_registry as ir
 
     assert "translation_placeholders" in ir.async_create_issue.__code__.co_varnames
     assert hasattr(ir, "IssueSeverity")
 
 
-def test_an_entity_entry_carries_an_area_and_a_device():
-    """`needs_area` reads both, and inherits one from the other."""
-    from homeassistant.helpers.entity_registry import RegistryEntry
+@pytest.mark.parametrize("path", TRANSLATIONS)
+def test_every_translation_carries_the_issue(path):
+    """A repair whose key is missing renders as the key. Renaming the rule and
+    forgetting one of three files is the way that happens.
+    """
+    from custom_components.registry_hygiene import ISSUE_DEVICES_WITHOUT_AREA
 
-    # attrs, not a dataclass -- the annotations are the portable way to ask.
-    for field in ("area_id", "device_id", "disabled_by"):
-        assert field in RegistryEntry.__annotations__
+    with open(path, encoding="utf-8") as handle:
+        issue = json.load(handle)["issues"][ISSUE_DEVICES_WITHOUT_AREA]
+
+    assert "{count}" in issue["title"]
+    assert "{devices}" in issue["description"]
 
 
 def test_the_declared_floor_is_the_one_the_tests_run_against():

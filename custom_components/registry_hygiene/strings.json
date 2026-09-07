@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Registry Hygiene",
-        "description": "Nothing to configure. Setting this up starts checking your entity registry and reports what it finds under Settings → Repairs."
+        "description": "Nothing to configure. Setting this up starts checking your device registry and reports what it finds under Settings → Repairs."
       }
     },
     "abort": {
@@ -11,9 +11,9 @@
     }
   },
   "issues": {
-    "missing_area_entities": {
-      "title": "{count} entities have no area",
-      "description": "These entities belong to no area, directly or through their device. Automations and voice assistants that reason by room cannot see them.\n\n{entities}\n\nAssign an area on the entity, or on its device so every one of its entities inherits it."
+    "devices_without_area": {
+      "title": "{count} devices have no area",
+      "description": "These devices belong to no area, so neither do any of their entities — an entity inherits its area from its device. Automations and voice assistants that reason by room cannot see them.\n\n{devices}\n\nOpen a device and set its area; every one of its entities follows. For a long list, the [device dashboard](/config/devices/dashboard) lets you sort and assign several at once.\n\nDevices Home Assistant marks as a service — a cloud account, a subscription, a bridge — are never listed here: they are not anywhere, and that is correct."
     }
   }
 }
