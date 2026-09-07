@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-MODULES = ("config_flow", "const", "rules")
+MODULES = ("config_flow", "const", "repairs", "rules")
 
 TRANSLATIONS = (
     "custom_components/registry_hygiene/strings.json",
@@ -76,6 +76,77 @@ def test_an_integration_says_what_kind_of_thing_it_is():
 
     assert hasattr(Integration, "integration_type")
     assert callable(async_get_integrations)
+
+
+def test_a_rule_can_be_a_subentry():
+    """Subentries are what give a label rule its own row, its own Add button
+    and its own delete -- most of the UI a rule builder would otherwise be.
+    """
+    from homeassistant.config_entries import ConfigFlow, ConfigSubentryFlow
+
+    assert ConfigSubentryFlow is not None
+    assert hasattr(ConfigFlow, "async_get_supported_subentry_types")
+
+
+def test_a_repair_can_carry_a_flow_and_its_data():
+    """The Fix button on a label repair. `issue.data` is what the flow is
+    handed, and it is where the entity and the labels to write live.
+    """
+    import inspect
+
+    from homeassistant import data_entry_flow
+    from homeassistant.components.repairs import RepairsFlow
+    from homeassistant.helpers import issue_registry as ir
+
+    # The steps are the subclass's to define; what the floor has to provide is
+    # the base and the `data` that reaches it.
+    assert issubclass(RepairsFlow, data_entry_flow.FlowHandler)
+    assert "data" in inspect.signature(ir.async_create_issue).parameters
+
+
+def test_an_entity_s_labels_can_be_written_back():
+    """What the Fix button actually does."""
+    import inspect
+
+    from homeassistant.helpers.entity_registry import EntityRegistry
+
+    parameters = inspect.signature(EntityRegistry.async_update_entity).parameters
+
+    assert "labels" in parameters
+
+
+def test_a_label_can_be_picked_and_named():
+    """The flow stores a label id and the repair prints the label's name."""
+    from homeassistant.helpers import label_registry as lr, selector
+
+    assert selector.LabelSelector(selector.LabelSelectorConfig(multiple=True))
+    assert hasattr(lr.LabelRegistry, "async_get_label")
+
+
+def test_an_entity_entry_carries_what_a_label_rule_reads():
+    from homeassistant.helpers.entity_registry import RegistryEntry
+
+    for field in (
+        "labels",
+        "domain",
+        "device_class",
+        # The one the integration set, which survives when the user has not
+        # overridden it -- most entities only ever have this one.
+        "original_device_class",
+        "entity_category",
+        "disabled_by",
+        "device_id",
+    ):
+        assert field in RegistryEntry.__annotations__
+
+
+def test_the_entity_registry_announces_its_changes():
+    """Subscribed to only when a label rule exists: it is the noisiest event
+    on the bus, and with no rule there is nothing it could change.
+    """
+    from homeassistant.helpers import entity_registry as er
+
+    assert er.EVENT_ENTITY_REGISTRY_UPDATED
 
 
 def test_the_checkboxes_can_be_built_and_translated():
@@ -152,6 +223,13 @@ def test_every_translation_carries_every_rule(path):
     checkbox. Adding a rule and forgetting one of three files is the way that
     happens; the rule ids are the translation keys, so this catches it.
     """
+    from custom_components.registry_hygiene.const import (
+        CONF_INCLUDE_TECHNICAL,
+        CONF_KEYWORDS,
+        CONF_LABELS,
+        ISSUE_MISSING_LABEL,
+        SUBENTRY_LABEL_RULE,
+    )
     from custom_components.registry_hygiene.rules import ALL_RULES
 
     with open(path, encoding="utf-8") as handle:
@@ -162,6 +240,25 @@ def test_every_translation_carries_every_rule(path):
         assert "{name}" in issue["title"]
         assert "{device_id}" in issue["description"]
         assert strings["selector"]["rules"]["options"][rule]
+
+    label_rule = strings["issues"][ISSUE_MISSING_LABEL]
+    assert "{labels}" in label_rule["title"]
+    assert "{entity_id}" in label_rule["description"]
+
+    # The Fix dialog has to name what it is about to write, or the button is
+    # asking for consent to something it did not say.
+    confirm = label_rule["fix_flow"]["step"]["confirm"]
+    assert "{labels}" in confirm["title"]
+    assert "{labels}" in confirm["description"]
+    assert "{entity_id}" in confirm["description"]
+
+    # The subentry dialog: without these the Add button opens a form whose
+    # every field is labelled with its own key.
+    subentry = strings["config_subentries"][SUBENTRY_LABEL_RULE]
+    for field in (CONF_KEYWORDS, CONF_LABELS, CONF_INCLUDE_TECHNICAL):
+        assert subentry["step"]["user"]["data"][field]
+    for error in ("matches_nothing", "no_keywords"):
+        assert subentry["error"][error]
 
 
 def test_the_declared_floor_is_the_one_the_tests_run_against():

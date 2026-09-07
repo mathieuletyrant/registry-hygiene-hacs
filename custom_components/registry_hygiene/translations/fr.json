@@ -21,6 +21,35 @@
       }
     }
   },
+  "config_subentries": {
+    "label_rule": {
+      "title": "Règle de label",
+      "entry_type": "Règle de label",
+      "initiate_flow": {
+        "user": "Ajouter une règle de label"
+      },
+      "step": {
+        "user": {
+          "title": "Règle de label",
+          "description": "Les entités dont l'identifiant contient un de ces mots doivent porter ces labels. Le label compte qu'il soit posé sur l'entité ou sur son appareil : labelliser un multi-capteur une fois couvre toutes ses entités.",
+          "data": {
+            "keywords": "Mots",
+            "labels": "Labels requis",
+            "include_technical": "Inclure les entités de configuration et de diagnostic"
+          },
+          "data_description": {
+            "keywords": "Des mots simples, cherchés n'importe où dans l'identifiant — `mouvement`, `volet`, `linky`. Tapez-en un, entrée, puis le suivant. Pas des motifs : un mot est un mot.",
+            "labels": "Tous. Une entité à qui il en manque deux reçoit une seule réparation qui les nomme tous les deux.",
+            "include_technical": "Décoché pour la plupart des règles : le capteur de batterie d'un détecteur n'a pas à porter `securite`. Coché pour une règle qui ne parle que d'elles — `battery`, `firmware`, `update`."
+          }
+        }
+      },
+      "error": {
+        "matches_nothing": "Aucune entité de cette instance ne contient un de ces mots : la règle ne se déclencherait jamais.",
+        "no_keywords": "Une règle a besoin d'au moins un mot."
+      }
+    }
+  },
   "selector": {
     "rules": {
       "options": {
@@ -37,6 +66,18 @@
     "device_without_label": {
       "title": "{name} n'a pas de label",
       "description": "Cet appareil ne porte aucun label : rien de ce qui sélectionne par label — une automatisation, un script, un filtre de tableau de bord — ne l'atteindra jamais.\n\n[Ouvrir {name}](/config/devices/device/{device_id}) et lui poser un label.\n\nLequel, c'est à vous de le décider : Home Assistant n'a pas d'avis sur les labels, et cette vérification non plus. Elle dit seulement que vous n'avez pas encore tranché. Si cet appareil n'en a pas besoin, appuyez sur **Ignorer**."
+    },
+    "entity_missing_label": {
+      "title": "{name} n'a pas le label {labels}",
+      "description": "Une de vos règles de label correspond à cette entité et demande **{labels}** — qu'elle ne porte ni elle-même, ni via son appareil.\n\n`{entity_id}`\n\nAppuyez sur **Réparer** pour l'ajouter. La règle dit déjà quel label appliquer, il n'y a rien à choisir.\n\nSi c'est une exception voulue, appuyez plutôt sur **Ignorer**. Pour arrêter la règle entièrement, supprimez-la depuis la page de l'intégration.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Appliquer {labels} ?",
+            "description": "`{entity_id}` recevra le label **{labels}**, en conservant ceux qu'elle porte déjà. Rien d'autre ne change, et le label se retire à tout moment depuis les réglages de l'entité."
+          }
+        }
+      }
     }
   }
 }

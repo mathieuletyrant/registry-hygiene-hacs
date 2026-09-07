@@ -1,8 +1,13 @@
 {
   "domain": "registry_hygiene",
   "name": "Registry Hygiene",
-  "codeowners": ["@mathieuletyrant"],
+  "codeowners": [
+    "@mathieuletyrant"
+  ],
   "config_flow": true,
+  "dependencies": [
+    "repairs"
+  ],
   "documentation": "https://github.com/mathieuletyrant/registry-hygiene-hacs",
   "integration_type": "service",
   "iot_class": "calculated",

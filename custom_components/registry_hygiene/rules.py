@@ -4,6 +4,8 @@ free of it -- and so a rule can be argued about without a running instance.
 
 from __future__ import annotations
 
+from .const import CONF_INCLUDE_TECHNICAL, CONF_KEYWORDS, CONF_LABELS
+
 RULE_AREA = "device_without_area"
 RULE_LABEL = "device_without_label"
 
@@ -78,3 +80,51 @@ def broken_rules(enabled, area_id, labels):
     if RULE_LABEL in enabled and not labels:
         broken.append(RULE_LABEL)
     return broken
+
+
+
+def is_a_real_entity(disabled_by):
+    """True when a label rule is allowed to have an opinion about an entity.
+
+    Only disabled entities are out, and unconditionally: they produce nothing,
+    so nothing selects them.
+
+    `config` and `diagnostic` entities are deliberately *not* filtered here,
+    although an earlier cut did filter them. A rule about `securite` has no
+    business with a battery sensor -- but a rule about `maintenance` is about
+    nothing else, and `battery`, `firmware`, `update` and `backup` are exactly
+    the entities it wants. Whether the technical ones count is a property of
+    the rule, not of the registry, so it lives on the rule.
+    """
+    return disabled_by is None
+
+
+def missing_labels(rule, entity_id, entity_category, labels, device_labels):
+    """Which of the rule's labels this entity ought to carry and does not.
+
+    Keywords against the `entity_id`, not a pattern language. A real policy --
+    seven rules, on a real instance -- turned out to be alternations of plain
+    substrings every time; the two that looked like regular expressions were
+    each already covered by a literal in the same rule. Substrings need no
+    validating, cannot backtrack catastrophically over a few thousand entity
+    ids, and are a field anyone can fill in.
+
+    The `entity_id` rather than the friendly name because it is the stable one,
+    and because Home Assistant builds it out of the device class for most
+    integrations: `sensor.salon_temperature`, `sensor.x_battery`,
+    `binary_sensor.y_motion`. A keyword reaches those without a second matcher
+    for device classes.
+
+    The label counts whether it sits on the entity or on its device, so both
+    styles work: label the multi-sensor once and its three entities are
+    covered, or label the single `motion` entity of a camera and leave the
+    video feed out of it.
+    """
+    if entity_category is not None and not rule.get(CONF_INCLUDE_TECHNICAL):
+        return []
+
+    if not any(keyword in entity_id for keyword in rule[CONF_KEYWORDS]):
+        return []
+
+    carried = set(labels) | set(device_labels)
+    return [label for label in rule[CONF_LABELS] if label not in carried]

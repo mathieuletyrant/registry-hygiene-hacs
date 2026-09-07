@@ -6,6 +6,11 @@ tempting mistake is to widen the exemptions until nothing is ever reported.
 `broken_rules` is the part that has to respect what the user turned on.
 """
 
+from custom_components.registry_hygiene.const import (
+    CONF_INCLUDE_TECHNICAL,
+    CONF_KEYWORDS,
+    CONF_LABELS,
+)
 from custom_components.registry_hygiene.rules import (
     ALL_RULES,
     DEFAULT_RULES,
@@ -13,6 +18,8 @@ from custom_components.registry_hygiene.rules import (
     RULE_LABEL,
     broken_rules,
     is_a_real_device,
+    is_a_real_entity,
+    missing_labels,
 )
 
 
@@ -99,3 +106,90 @@ def test_labels_are_off_by_default_and_areas_are_not():
     new install with a repair per device.
     """
     assert broken_rules(DEFAULT_RULES, None, set()) == [RULE_AREA]
+
+
+
+def test_an_enabled_entity_can_be_judged():
+    assert is_a_real_entity(None)
+
+
+def test_a_disabled_entity_cannot():
+    assert not is_a_real_entity("integration")
+
+
+def rule(keywords=("mouvement", "contact"), labels=("securite",), technical=False):
+    return {
+        CONF_KEYWORDS: list(keywords),
+        CONF_LABELS: list(labels),
+        CONF_INCLUDE_TECHNICAL: technical,
+    }
+
+
+def missing(
+    r=None,
+    entity_id="binary_sensor.hall_mouvement",
+    entity_category=None,
+    labels=frozenset(),
+    device_labels=frozenset(),
+):
+    return missing_labels(
+        r or rule(), entity_id, entity_category, labels, device_labels
+    )
+
+
+def test_a_matching_entity_is_missing_the_label():
+    assert missing() == ["securite"]
+
+
+def test_a_word_matches_anywhere_in_the_id():
+    """Which is the whole reason keywords beat device classes here: Home
+    Assistant already puts the class in the id -- `sensor.salon_temperature` --
+    so one matcher reaches both naming conventions and classes.
+    """
+    assert missing(rule(keywords=["temperature"]), "sensor.salon_temperature")
+    assert missing(rule(keywords=["linky"]), "sensor.linky_intensite")
+
+
+def test_a_non_matching_entity_is_left_alone():
+    assert missing(entity_id="light.cuisine") == []
+
+
+def test_the_label_on_the_entity_satisfies_the_rule():
+    assert missing(labels={"securite"}) == []
+
+
+def test_the_label_on_the_device_satisfies_it_too():
+    """Which is what lets somebody label a multi-sensor once instead of
+    labelling each of its three entities. Without this, the tidier style would
+    produce a repair per entity for a device that is perfectly filed.
+    """
+    assert missing(device_labels={"securite"}) == []
+
+
+def test_only_the_labels_actually_absent_are_reported():
+    """A rule asking for two, one of which is already there."""
+    both = rule(labels=["confort", "lumiere"], keywords=["lampadaire"])
+
+    assert missing(both, "light.lampadaire", labels={"confort"}) == ["lumiere"]
+
+
+def test_plumbing_is_out_of_scope_by_default():
+    """A motion detector's battery sensor has no business carrying
+    `securite` because the motion sensor does.
+    """
+    assert missing(entity_id="sensor.hall_mouvement_battery",
+                   entity_category="diagnostic") == []
+
+
+def test_a_rule_can_opt_into_plumbing():
+    """And a real policy has exactly one such rule: `battery`, `firmware`,
+    `update`, `backup` -> maintenance is about nothing else. Filtering
+    diagnostics globally, as an earlier cut did, made that rule impossible to
+    write.
+    """
+    maintenance = rule(
+        keywords=["battery"], labels=["maintenance"], technical=True
+    )
+
+    assert missing(maintenance, "sensor.hall_battery",
+                   entity_category="diagnostic") == ["maintenance"]

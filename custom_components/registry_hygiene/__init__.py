@@ -6,12 +6,23 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, issue_registry as ir
+from homeassistant.helpers import (
+    device_registry as dr,
+    entity_registry as er,
+    issue_registry as ir,
+    label_registry as lr,
+)
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.loader import async_get_integrations
 
-from .const import DOMAIN, OPTION_RULES
-from .rules import DEFAULT_RULES, broken_rules, is_a_real_device
+from .const import DOMAIN, ISSUE_MISSING_LABEL, OPTION_RULES, SUBENTRY_LABEL_RULE
+from .rules import (
+    DEFAULT_RULES,
+    broken_rules,
+    is_a_real_device,
+    is_a_real_entity,
+    missing_labels,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,9 +42,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     next restart.
     """
     enabled = frozenset(entry.options.get(OPTION_RULES, DEFAULT_RULES))
+    label_rules = {
+        subentry_id: subentry.data
+        for subentry_id, subentry in entry.subentries.items()
+        if subentry.subentry_type == SUBENTRY_LABEL_RULE
+    }
 
     async def _check(_event=None) -> None:
-        await _async_sync_issues(hass, enabled)
+        await _async_sync_issues(hass, enabled, label_rules)
 
     debouncer = Debouncer(
         hass,
@@ -52,11 +68,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             dr.EVENT_DEVICE_REGISTRY_UPDATED, _on_device_registry_update
         )
     )
+    if label_rules:
+        # Only with rules to check: an entity registry event fires for every
+        # rename and every state-less change on the instance, and subscribing
+        # to that to answer a question nobody asked would be the noisiest thing
+        # here by an order of magnitude.
+        entry.async_on_unload(
+            hass.bus.async_listen(
+                er.EVENT_ENTITY_REGISTRY_UPDATED, _on_device_registry_update
+            )
+        )
+
+    # Adding or removing a subentry goes through `_async_update_entry`, which
+    # fires this, so a new rule applies without anyone reloading anything.
     entry.async_on_unload(entry.add_update_listener(_async_reload))
 
     # Not through the debouncer: setup should say what it found now, not in
     # five seconds.
-    await _async_sync_issues(hass, enabled)
+    await _async_sync_issues(hass, enabled, label_rules)
     return True
 
 
@@ -159,16 +188,78 @@ def _prune_issues(hass: HomeAssistant, keep: set[str]) -> None:
             ir.async_delete_issue(hass, DOMAIN, issue_id)
 
 
-async def _async_sync_issues(hass: HomeAssistant, enabled: frozenset[str]) -> None:
+def _label_violations(hass: HomeAssistant, label_rules: dict) -> dict:
+    """Every (rule, entity) pair where the entity is missing the rule's labels.
+
+    One pass over the entity registry rather than one per rule: an instance has
+    a handful of rules and thousands of entities.
+    """
+    if not label_rules:
+        return {}
+
+    devices = dr.async_get(hass)
+    labels = lr.async_get(hass)
+    found = {}
+
+    def _name(label_id: str) -> str:
+        label = labels.async_get_label(label_id)
+        return label.name if label else label_id
+
+    for entity in er.async_get(hass).entities.values():
+        if not is_a_real_entity(entity.disabled_by):
+            continue
+
+        device = devices.async_get(entity.device_id) if entity.device_id else None
+        device_labels = device.labels if device else frozenset()
+
+        for subentry_id, rule in label_rules.items():
+            wanted = missing_labels(
+                rule,
+                entity.entity_id,
+                entity.entity_category,
+                entity.labels,
+                device_labels,
+            )
+            if not wanted:
+                continue
+
+            found[f"{ISSUE_MISSING_LABEL}_{subentry_id}_{entity.id}"] = (
+                ISSUE_MISSING_LABEL,
+                {
+                    "name": entity.name or entity.original_name or entity.entity_id,
+                    "entity_id": entity.entity_id,
+                    "labels": ", ".join(_name(label) for label in wanted),
+                },
+                # What the fix flow needs to do the work, and nothing more: it
+                # re-reads the entity itself, so a registry that moved between
+                # the repair being raised and the button being pressed does not
+                # get written back stale.
+                {"entity_id": entity.entity_id, "labels": wanted},
+            )
+
+    return found
+
+
+async def _async_sync_issues(
+    hass: HomeAssistant, enabled: frozenset[str], label_rules: dict
+) -> None:
     wanted = {
-        f"{rule}_{device.id}": (rule, device)
+        f"{rule}_{device.id}": (
+            rule,
+            {"name": _device_name(device), "device_id": device.id},
+            # No fix data: which room a device is in is not something this can
+            # work out, which is why that repair sends you to the device page
+            # instead of offering a button.
+            None,
+        )
         for device in await _async_real_devices(hass)
         for rule in broken_rules(enabled, device.area_id, device.labels)
     }
+    wanted |= _label_violations(hass, label_rules)
 
     _prune_issues(hass, keep=set(wanted))
 
-    for issue_id, (rule, device) in wanted.items():
+    for issue_id, (translation_key, placeholders, fix_data) in wanted.items():
         # One issue per device per rule, so that Home Assistant's own Ignore
         # button means "not this one" rather than "none of them". The residue
         # no rule can decide -- a phone, a dongle -- is exactly what that
@@ -181,11 +272,13 @@ async def _async_sync_issues(hass: HomeAssistant, enabled: frozenset[str]) -> No
             hass,
             DOMAIN,
             issue_id,
-            is_fixable=False,
+            # Fixable only where there is nothing left to decide. A label
+            # rule already says which labels to apply, so the flow is one
+            # button; an area is a judgment, and a dropdown in a repair dialog
+            # would be a worse version of the one on the device page.
+            is_fixable=fix_data is not None,
+            data=fix_data,
             severity=ir.IssueSeverity.WARNING,
-            translation_key=rule,
-            translation_placeholders={
-                "name": _device_name(device),
-                "device_id": device.id,
-            },
+            translation_key=translation_key,
+            translation_placeholders=placeholders,
         )

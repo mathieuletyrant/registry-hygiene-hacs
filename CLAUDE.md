@@ -18,15 +18,28 @@ longer read at all.
 | ---- | ------------- |
 | `rules.py` | The rules, as pure functions, plus `is_a_real_device` — the gate they all sit behind — and which of them default on. **Never imports homeassistant** — that is the point of the file, and what keeps a rule arguable without a running instance. It compares `entry_type` against the bare string `"service"`; `tests/test_floor.py` pins that value so the import can stay out. |
 | `__init__.py` | Reads the registry, calls the rules, reconciles the issues, and re-checks on `EVENT_DEVICE_REGISTRY_UPDATED` behind a `Debouncer` — a restart fires a burst of those. |
-| `config_flow.py` | One entry, one confirmation, plus the options flow: a checkbox per rule, and nothing else in it ever. |
-| `const.py` | `DOMAIN` and `OPTION_RULES`, so the config flow can import them without pulling the registries and the loader in behind them. |
+| `config_flow.py` | One entry, one confirmation; the options flow (a checkbox per built-in check, and nothing else in it ever); and the label-rule subentry flow. |
+| `const.py` | The names the flows, the rules and the entry point share, so `config_flow.py` and `repairs.py` can import them without pulling the registries and the loader in behind them. |
+| `repairs.py` | The Fix button on a label repair, and nothing else. Discovered through `dependencies: ["repairs"]` in the manifest. |
+| `scripts/make_icon.py` | Draws `icons/`. Nine rounded squares; the drawing is the source. |
 | `strings.json` + `translations/` | The text of every repair. `strings.json` and `translations/en.json` are the same file; keep `fr.json` in step. |
 
 A new rule is a function in `rules.py`, a caller in `__init__.py`, and an entry
 under `issues` in all three translation files. If a rule needs `hass` to decide,
 it does not belong in `rules.py`.
 
-## Three things not to undo
+## Two grains, on purpose
+
+Areas are checked on **devices**, label rules on **entities**. Not an
+inconsistency to tidy up: an entity inherits its area from its device, so the
+area question is only ever about the device — but a label policy is written
+against entity ids, and a device has none. `rules.py` has a gate for each
+grain, `is_a_real_device` and `is_a_real_entity`.
+
+A label rule is satisfied by the label sitting on the entity **or on its
+device**, which is what makes the device-grain use case work anyway.
+
+## Four things not to undo
 
 **One issue per device, and reconcile — never delete then recreate.**
 `async_get_or_create` is the only path that leaves `dismissed_version` alone,
@@ -41,6 +54,24 @@ takes `dismissed_version` with it. Tearing them down there would un-ignore
 every device the user had ignored, every time they touched the settings.
 `async_remove_entry` is the hook that fires only on real removal, and that is
 where they go.
+
+**Label rules match plain substrings, not patterns.** The policy this was
+built against was seven rules of alternated literals; the two that looked like
+regular expressions were each already covered by a literal in the same rule.
+Substrings need no validating and cannot backtrack over thousands of entity
+ids. They match the `entity_id`, which is also why there is no device-class
+matcher: Home Assistant already builds the class into the id.
+
+**Only the label repair is fixable.** A rule already says which labels to
+apply, so its flow is one button. An area is a judgment, and a dropdown inside
+a repair dialog would be a worse copy of the one on the device page — that is
+why `_async_sync_issues` passes `data=None` for the device checks and lets
+`is_fixable` follow from it.
+
+**`config`/`diagnostic` entities are filtered per rule, not globally.** An
+earlier cut filtered them everywhere, which made `battery`, `firmware`,
+`update` -> `maintenance` impossible to write — a rule about exactly those
+entities.
 
 **`hub` is not exempt.** It is also Home Assistant's fallback for a manifest
 that declares no `integration_type`, so exempting it would quietly exempt

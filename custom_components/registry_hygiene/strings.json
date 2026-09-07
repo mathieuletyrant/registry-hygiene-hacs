@@ -21,6 +21,35 @@
       }
     }
   },
+  "config_subentries": {
+    "label_rule": {
+      "title": "Label rule",
+      "entry_type": "Label rule",
+      "initiate_flow": {
+        "user": "Add a label rule"
+      },
+      "step": {
+        "user": {
+          "title": "Label rule",
+          "description": "Entities whose id contains any of these words must carry these labels. The label counts whether it sits on the entity or on its device, so labelling a multi-sensor once covers all of its entities.",
+          "data": {
+            "keywords": "Words",
+            "labels": "Required labels",
+            "include_technical": "Include config and diagnostic entities"
+          },
+          "data_description": {
+            "keywords": "Plain words matched anywhere in the entity id — `motion`, `volet`, `linky`. Type one, press enter, type the next. Not patterns: a word is a word.",
+            "labels": "All of them. An entity missing two gets one repair naming both.",
+            "include_technical": "Off for most rules: a motion detector's battery sensor has no business carrying `security`. On for a rule that is about exactly those — `battery`, `firmware`, `update`."
+          }
+        }
+      },
+      "error": {
+        "matches_nothing": "No entity on this instance contains any of those words, so the rule would never fire.",
+        "no_keywords": "A rule needs at least one word."
+      }
+    }
+  },
   "selector": {
     "rules": {
       "options": {
@@ -37,6 +66,18 @@
     "device_without_label": {
       "title": "{name} has no label",
       "description": "This device carries no label, so nothing that selects by label — an automation, a script, a dashboard filter — will ever reach it.\n\n[Open {name}](/config/devices/device/{device_id}) and label it.\n\nWhich label is yours to decide: Home Assistant has no opinion about them, and neither does this check. It only says you have not decided yet. If this device needs none, press **Ignore**."
+    },
+    "entity_missing_label": {
+      "title": "{name} is missing the label {labels}",
+      "description": "One of your label rules matches this entity, and asks for **{labels}** — which it carries neither itself nor on its device.\n\n`{entity_id}`\n\nPress **Fix** to add it. The rule already says which label to apply, so there is nothing to choose.\n\nIf this one is a deliberate exception, press **Ignore** instead. To stop the rule entirely, delete it from the integration page.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Apply {labels}?",
+            "description": "`{entity_id}` will be given the label **{labels}**, keeping any it already has. Nothing else about the entity changes, and you can remove the label again from its settings at any time."
+          }
+        }
+      }
     }
   }
 }
