@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Registry Hygiene",
+        "description": "Nothing to configure. Setting this up starts checking your entity registry and reports what it finds under Settings → Repairs."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Already configured. Only one instance is needed."
+    }
+  },
+  "issues": {
+    "missing_area_entities": {
+      "title": "{count} entities have no area",
+      "description": "These entities belong to no area, directly or through their device. Automations and voice assistants that reason by room cannot see them.\n\n{entities}\n\nAssign an area on the entity, or on its device so every one of its entities inherits it."
+    }
+  }
+}

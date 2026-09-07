@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Registry Hygiene",
+        "description": "Rien à configurer. L'installation lance la vérification du registre des entités et signale ce qu'elle trouve dans Paramètres → Réparations."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Déjà configuré. Une seule instance suffit."
+    }
+  },
+  "issues": {
+    "missing_area_entities": {
+      "title": "{count} entités sans pièce",
+      "description": "Ces entités n'appartiennent à aucune pièce, ni directement ni via leur appareil. Les automatisations et les assistants vocaux qui raisonnent par pièce ne les voient pas.\n\n{entities}\n\nAssignez une pièce à l'entité, ou à son appareil pour que toutes ses entités en héritent."
+    }
+  }
+}
