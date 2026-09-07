@@ -10,12 +10,10 @@ from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.loader import async_get_integrations
 
-from .rules import needs_area
+from .const import DOMAIN, OPTION_RULES
+from .rules import DEFAULT_RULES, broken_rules, is_a_real_device
 
 _LOGGER = logging.getLogger(__name__)
-
-DOMAIN = "registry_hygiene"
-ISSUE_DEVICE_WITHOUT_AREA = "device_without_area"
 
 # The device registry churns while integrations set up: a restart fires a burst
 # of events over a few seconds. The check is cheap but not free a hundred times
@@ -32,9 +30,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     area and look again, and the repair would still be sitting there until the
     next restart.
     """
+    enabled = frozenset(entry.options.get(OPTION_RULES, DEFAULT_RULES))
 
     async def _check(_event=None) -> None:
-        await _async_sync_issues(hass)
+        await _async_sync_issues(hass, enabled)
 
     debouncer = Debouncer(
         hass,
@@ -53,24 +52,46 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             dr.EVENT_DEVICE_REGISTRY_UPDATED, _on_device_registry_update
         )
     )
+    entry.async_on_unload(entry.add_update_listener(_async_reload))
 
     # Not through the debouncer: setup should say what it found now, not in
     # five seconds.
-    await _async_sync_issues(hass)
+    await _async_sync_issues(hass, enabled)
     return True
+
+
+async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Turning a rule on or off takes effect on the spot.
+
+    Reloading is all it takes: setup re-reads the options and re-reconciles, so
+    switching a rule off takes its repairs down with it.
+    """
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Leave the repairs standing.
+
+    Deliberately *not* the place to take them down. A reload -- which is how an
+    options change applies -- unloads and sets up again, and deleting an issue
+    drops its `dismissed_version` with it. Tearing them down here would silently
+    un-ignore every device the user had ignored, every time they touched the
+    settings. `async_remove_entry` is where they go, and that only fires when
+    the integration is actually removed.
+    """
+    return True
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Take the repairs down with the integration: they are its only output."""
     _prune_issues(hass, keep=set())
-    return True
 
 
 async def _async_integration_types(hass: HomeAssistant, domains: set[str]) -> dict:
     """What kind of integration each domain declares itself to be.
 
-    Fetched in one call rather than per device, and by domain rather than by
-    device, because a hundred Zigbee devices share one answer.
+    Fetched in one call rather than per device, and keyed by domain rather than
+    by device, because a hundred Zigbee devices share one answer.
     """
     if not domains:
         return {}
@@ -85,50 +106,40 @@ async def _async_integration_types(hass: HomeAssistant, domains: set[str]) -> di
     }
 
 
-async def _async_devices_without_area(hass: HomeAssistant) -> list:
-    """The offending devices, sorted by the name they are shown under."""
-    devices = [
+def _domain_of(hass: HomeAssistant, device) -> str | None:
+    entry_id = device.primary_config_entry
+    if not entry_id:
+        return None
+    entry = hass.config_entries.async_get_entry(entry_id)
+    return entry.domain if entry else None
+
+
+async def _async_real_devices(hass: HomeAssistant) -> list:
+    """Every device a rule is allowed to have an opinion about."""
+    candidates = [
         device
         for device in dr.async_get(hass).devices.values()
-        # Cheap and registry-only, so it runs before the manifests are looked
-        # up and decides most of them.
+        # Registry-only and cheap, so it runs before any manifest is looked up
+        # and settles most of them.
         if device.disabled_by is None
         and device.entry_type != dr.DeviceEntryType.SERVICE
-        and not device.area_id
     ]
 
-    entries = hass.config_entries
-    domains = {
-        entry.domain
-        for device in devices
-        if device.primary_config_entry
-        and (entry := entries.async_get_entry(device.primary_config_entry))
-    }
-    types = await _async_integration_types(hass, domains)
+    types = await _async_integration_types(
+        hass, {domain for device in candidates if (domain := _domain_of(hass, device))}
+    )
 
-    def _integration_type(device) -> str:
-        entry = (
-            entries.async_get_entry(device.primary_config_entry)
-            if device.primary_config_entry
-            else None
-        )
+    return [
+        device
+        for device in candidates
         # "hub" is what Home Assistant itself falls back to for a manifest that
         # says nothing, and it is the answer that keeps a device in the list.
-        return types.get(entry.domain, "hub") if entry else "hub"
-
-    return sorted(
-        (
-            device
-            for device in devices
-            if needs_area(
-                device.area_id,
-                device.entry_type,
-                device.disabled_by,
-                _integration_type(device),
-            )
-        ),
-        key=_device_name,
-    )
+        if is_a_real_device(
+            device.entry_type,
+            device.disabled_by,
+            types.get(_domain_of(hass, device), "hub"),
+        )
+    ]
 
 
 def _device_name(device) -> str:
@@ -148,16 +159,19 @@ def _prune_issues(hass: HomeAssistant, keep: set[str]) -> None:
             ir.async_delete_issue(hass, DOMAIN, issue_id)
 
 
-async def _async_sync_issues(hass: HomeAssistant) -> None:
-    devices = await _async_devices_without_area(hass)
-    issue_ids = {f"{ISSUE_DEVICE_WITHOUT_AREA}_{device.id}" for device in devices}
+async def _async_sync_issues(hass: HomeAssistant, enabled: frozenset[str]) -> None:
+    wanted = {
+        f"{rule}_{device.id}": (rule, device)
+        for device in await _async_real_devices(hass)
+        for rule in broken_rules(enabled, device.area_id, device.labels)
+    }
 
-    _prune_issues(hass, keep=issue_ids)
+    _prune_issues(hass, keep=set(wanted))
 
-    for device in devices:
-        # One issue per device, so that Home Assistant's own Ignore button
-        # means "not this one" rather than "none of them". The residue this
-        # rule cannot decide -- a phone, a dongle -- is exactly what that
+    for issue_id, (rule, device) in wanted.items():
+        # One issue per device per rule, so that Home Assistant's own Ignore
+        # button means "not this one" rather than "none of them". The residue
+        # no rule can decide -- a phone, a dongle -- is exactly what that
         # button is for, and it costs no configuration of ours.
         #
         # ponytail: an instance mid-migration with a hundred unfiled devices
@@ -166,10 +180,10 @@ async def _async_sync_issues(hass: HomeAssistant) -> None:
         ir.async_create_issue(
             hass,
             DOMAIN,
-            f"{ISSUE_DEVICE_WITHOUT_AREA}_{device.id}",
+            issue_id,
             is_fixable=False,
             severity=ir.IssueSeverity.WARNING,
-            translation_key=ISSUE_DEVICE_WITHOUT_AREA,
+            translation_key=rule,
             translation_placeholders={
                 "name": _device_name(device),
                 "device_id": device.id,

@@ -14,7 +14,7 @@ import json
 
 import pytest
 
-MODULES = ("config_flow", "rules")
+MODULES = ("config_flow", "const", "rules")
 
 TRANSLATIONS = (
     "custom_components/registry_hygiene/strings.json",
@@ -54,6 +54,8 @@ def test_a_device_entry_carries_what_the_rule_reads():
         "disabled_by",
         "name",
         "name_by_user",
+        # The second rule reads this one.
+        "labels",
     ):
         assert field in DeviceEntry.__annotations__
 
@@ -74,6 +76,32 @@ def test_an_integration_says_what_kind_of_thing_it_is():
 
     assert hasattr(Integration, "integration_type")
     assert callable(async_get_integrations)
+
+
+def test_the_checkboxes_can_be_built_and_translated():
+    """LIST mode with `multiple` is what renders a column of checkboxes rather
+    than a dropdown, and `translation_key` is what gives each one a sentence
+    instead of its rule id. Both are load-bearing for the options dialog.
+    """
+    from homeassistant.helpers import selector
+
+    config = selector.SelectSelectorConfig(
+        options=["a", "b"],
+        multiple=True,
+        mode=selector.SelectSelectorMode.LIST,
+        translation_key="rules",
+    )
+
+    assert selector.SelectSelector(config)
+
+
+def test_an_options_flow_can_read_its_entry():
+    """`self.config_entry` on the base class -- assigning it is deprecated,
+    and the flow reads the current selection through it.
+    """
+    from homeassistant.config_entries import OptionsFlow
+
+    assert hasattr(OptionsFlow, "config_entry")
 
 
 def test_an_ignored_issue_stays_ignored_when_it_is_raised_again():
@@ -119,17 +147,21 @@ def test_the_issue_registry_takes_translated_placeholders():
 
 
 @pytest.mark.parametrize("path", TRANSLATIONS)
-def test_every_translation_carries_the_issue(path):
-    """A repair whose key is missing renders as the key. Renaming the rule and
-    forgetting one of three files is the way that happens.
+def test_every_translation_carries_every_rule(path):
+    """A repair whose key is missing renders as the key, and so does a
+    checkbox. Adding a rule and forgetting one of three files is the way that
+    happens; the rule ids are the translation keys, so this catches it.
     """
-    from custom_components.registry_hygiene import ISSUE_DEVICE_WITHOUT_AREA
+    from custom_components.registry_hygiene.rules import ALL_RULES
 
     with open(path, encoding="utf-8") as handle:
-        issue = json.load(handle)["issues"][ISSUE_DEVICE_WITHOUT_AREA]
+        strings = json.load(handle)
 
-    assert "{name}" in issue["title"]
-    assert "{device_id}" in issue["description"]
+    for rule in ALL_RULES:
+        issue = strings["issues"][rule]
+        assert "{name}" in issue["title"]
+        assert "{device_id}" in issue["description"]
+        assert strings["selector"]["rules"]["options"][rule]
 
 
 def test_the_declared_floor_is_the_one_the_tests_run_against():

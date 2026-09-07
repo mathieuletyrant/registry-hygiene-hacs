@@ -3,17 +3,40 @@
     "step": {
       "user": {
         "title": "Registry Hygiene",
-        "description": "Nothing to configure. Setting this up starts checking your device registry and reports what it finds under Settings → Repairs."
+        "description": "Nothing to configure. Setting this up starts checking your device registry and reports what it finds under Settings → Repairs. You can turn individual checks on and off afterwards, from Configure."
       }
     },
     "abort": {
       "single_instance_allowed": "Already configured. Only one instance is needed."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Registry Hygiene",
+        "description": "Which checks should run. Turning one off takes its repairs down with it, straight away.",
+        "data": {
+          "rules": "Checks"
+        }
+      }
+    }
+  },
+  "selector": {
+    "rules": {
+      "options": {
+        "device_without_area": "Devices with no area",
+        "device_without_label": "Devices with no label"
+      }
+    }
+  },
   "issues": {
     "device_without_area": {
       "title": "{name} has no area",
       "description": "This device belongs to no area, so neither do any of its entities — an entity inherits its area from its device. Automations and voice assistants that reason by room cannot see them.\n\n[Open {name}](/config/devices/device/{device_id}) and set its area; every one of its entities follows.\n\nIf this device has no room — a phone, a USB dongle, something an integration invented to hang a button off — press **Ignore**. It will not be raised again."
+    },
+    "device_without_label": {
+      "title": "{name} has no label",
+      "description": "This device carries no label, so nothing that selects by label — an automation, a script, a dashboard filter — will ever reach it.\n\n[Open {name}](/config/devices/device/{device_id}) and label it.\n\nWhich label is yours to decide: Home Assistant has no opinion about them, and neither does this check. It only says you have not decided yet. If this device needs none, press **Ignore**."
     }
   }
 }

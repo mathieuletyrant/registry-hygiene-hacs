@@ -1,78 +1,101 @@
-"""The rule itself, with no Home Assistant in the room.
+"""The rules themselves, with no Home Assistant in the room.
 
-Two cases carry the file. One is the move from entities to devices: an entity
-inherits its area from its device, so checking entities reported one unassigned
-light twelve times over -- once per entity it owns -- and the fix for all twelve
-was the same single click.
-
-The other is `integration_type`, and what it does *not* exempt. The set is
-deliberately narrow, and the tests below pin both edges of it -- because the
-tempting mistake is to widen it until the rule reports nothing.
+Two things carry the file. `is_a_real_device` is the gate every rule sits
+behind, and its edges are what stop the checks from being noise -- the
+tempting mistake is to widen the exemptions until nothing is ever reported.
+`broken_rules` is the part that has to respect what the user turned on.
 """
 
-from custom_components.registry_hygiene.rules import needs_area
+from custom_components.registry_hygiene.rules import (
+    ALL_RULES,
+    DEFAULT_RULES,
+    RULE_AREA,
+    RULE_LABEL,
+    broken_rules,
+    is_a_real_device,
+)
 
 
-def device(area_id=None, entry_type=None, disabled_by=None, integration_type="device"):
-    """A device the rule would flag, unless an argument says otherwise."""
-    return needs_area(area_id, entry_type, disabled_by, integration_type)
+def real(entry_type=None, disabled_by=None, integration_type="device"):
+    """A device the gate lets through, unless an argument says otherwise."""
+    return is_a_real_device(entry_type, disabled_by, integration_type)
 
 
-def test_a_device_with_an_area_is_fine():
-    assert not device(area_id="cuisine")
+def test_an_ordinary_device_is_a_real_device():
+    assert real()
 
 
-def test_a_device_in_no_area_is_flagged():
-    assert device()
-
-
-def test_an_empty_string_is_not_an_area():
-    """The registry stores None, but a placeholder should not sneak past."""
-    assert device(area_id="")
-
-
-def test_a_service_is_never_flagged():
+def test_a_service_is_not():
     """A cloud account is nowhere, and nowhere is the right answer for it.
 
     "service" is `DeviceEntryType.SERVICE`; test_floor.py pins the value so
     rules.py can compare against the string without importing homeassistant.
     """
-    assert not device(entry_type="service")
+    assert not real(entry_type="service")
 
 
-def test_a_disabled_device_is_never_flagged():
-    """It shows nowhere and produces nothing, so an area changes nothing."""
-    assert not device(disabled_by="user")
+def test_a_disabled_device_is_not():
+    """It shows nowhere and produces nothing, so filing it changes nothing."""
+    assert not real(disabled_by="user")
 
 
-def test_home_assistant_talking_about_itself_is_not_in_a_room():
+def test_home_assistant_talking_about_itself_is_not():
     """`homeassistant` and `cloud` both declare `system`."""
-    assert not device(integration_type="system")
+    assert not real(integration_type="system")
 
 
-def test_the_machine_it_runs_on_is_not_in_a_room():
+def test_the_machine_it_runs_on_is_not():
     """`raspberry_pi` declares `hardware`."""
-    assert not device(integration_type="hardware")
+    assert not real(integration_type="hardware")
 
 
-def test_a_helper_is_not_in_a_room():
-    assert device(integration_type="helper") is False
+def test_a_helper_is_not():
+    assert not real(integration_type="helper")
 
 
-def test_a_hub_is_in_a_room():
+def test_a_hub_is():
     """A Hue bridge is a box on a shelf. This is the edge that matters most:
     `hub` is also what Home Assistant falls back to for a manifest that
     declares nothing, so exempting it would silently exempt everything
     unlabelled -- `bluetooth` and `rpi_power` among them.
     """
-    assert device(integration_type="hub")
+    assert real(integration_type="hub")
 
 
-def test_a_phone_is_still_flagged_and_that_is_the_known_limit():
+def test_a_phone_is_and_that_is_the_known_limit():
     """`mobile_app` declares `device`, honestly, because a phone is one.
 
-    No flag Home Assistant maintains separates a phone from a lamp, so the rule
-    does not try. This is the case the per-device repair exists for: Ignore it
-    once, and Home Assistant remembers.
+    No flag Home Assistant maintains separates a phone from a lamp, so the
+    rules do not try. This is the case the per-device repair exists for:
+    Ignore it once, and Home Assistant remembers.
     """
-    assert device(integration_type="device")
+    assert real(integration_type="device")
+
+
+def test_a_filed_device_breaks_nothing():
+    assert broken_rules(ALL_RULES, "cuisine", {"security"}) == []
+
+
+def test_each_rule_reports_what_it_is_about():
+    assert broken_rules(ALL_RULES, None, {"security"}) == [RULE_AREA]
+    assert broken_rules(ALL_RULES, "cuisine", set()) == [RULE_LABEL]
+    assert broken_rules(ALL_RULES, None, set()) == [RULE_AREA, RULE_LABEL]
+
+
+def test_an_empty_string_is_not_an_area():
+    """The registry stores None, but a placeholder should not sneak past."""
+    assert broken_rules(ALL_RULES, "", {"security"}) == [RULE_AREA]
+
+
+def test_a_rule_that_is_off_reports_nothing():
+    assert broken_rules({RULE_AREA}, None, set()) == [RULE_AREA]
+    assert broken_rules(set(), None, set()) == []
+
+
+def test_labels_are_off_by_default_and_areas_are_not():
+    """Home Assistant has an opinion about rooms and none about labels, so one
+    of these is a defect on any instance and the other is only a defect once
+    its owner has decided on a scheme. Flipping this default would greet every
+    new install with a repair per device.
+    """
+    assert broken_rules(DEFAULT_RULES, None, set()) == [RULE_AREA]

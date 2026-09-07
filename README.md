@@ -13,7 +13,11 @@ finds under **Settings → Repairs**, alongside Home Assistant's own.
 ## ✨ What you get
 
 - 🏠 **Devices with no area** — one repair per device, linking straight to its
-  page, where you set the area once and all of its entities inherit it.
+  page, where you set the area once and all of its entities inherit it. **On by
+  default.**
+- 🏷️ **Devices with no label** — the same, for the labels nothing else will
+  remind you about. **Off by default**, because Home Assistant has no opinion
+  about labels and neither should a fresh install.
 
 More rules may follow; this list is what exists today rather than what is
 planned.
@@ -48,8 +52,9 @@ Copy `custom_components/registry_hygiene` into your Home Assistant
 
 ## ⚙️ Configuration
 
-None, and there is nothing to add later either — the two things a settings
-page would normally be for are already covered.
+One dialog, behind **Configure** on the integration card: a checkbox per check.
+That is all it will ever hold, because the two other things a settings page is
+normally for are already covered without it.
 
 **Filtering** is read off flags Home Assistant maintains itself: devices it
 marks as a service (a cloud account, a subscription), disabled ones, and
@@ -64,11 +69,19 @@ because it is one. So they get a repair each, and you press **Ignore** —
 Home Assistant remembers, per device, forever. That is the ignore list, and it
 needed no code.
 
+There is deliberately **no rule builder** — no "if it is a sensor it must be
+labelled `security`". The thing that catches a forgotten label is a repair
+saying the device has none; *which* label is a two-second judgment on the
+device page, with the model and the entity list in front of you. Teaching an
+integration your policy costs a condition language and an editor for it, to
+replace a decision you make faster by hand.
+
 ## 🩺 What a report looks like
 
-One repair per device, titled with its name. It re-checks whenever the device
-registry changes, so assigning an area makes the repair vanish in front of you
-rather than at the next restart. Nothing here ever blocks anything.
+One repair per device per check, titled with the device's name. It re-checks
+whenever the device registry changes, so assigning an area makes the repair
+vanish in front of you rather than at the next restart. Nothing here ever
+blocks anything.
 
 ## 🤝 Contributing
 

@@ -3,17 +3,40 @@
     "step": {
       "user": {
         "title": "Registry Hygiene",
-        "description": "Rien à configurer. L'installation lance la vérification du registre des appareils et signale ce qu'elle trouve dans Paramètres → Réparations."
+        "description": "Rien à configurer. L'installation lance la vérification du registre des appareils et signale ce qu'elle trouve dans Paramètres → Réparations. Les vérifications s'activent et se désactivent ensuite, depuis Configurer."
       }
     },
     "abort": {
       "single_instance_allowed": "Déjà configuré. Une seule instance suffit."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Registry Hygiene",
+        "description": "Quelles vérifications exécuter. En désactiver une retire ses réparations dans la foulée.",
+        "data": {
+          "rules": "Vérifications"
+        }
+      }
+    }
+  },
+  "selector": {
+    "rules": {
+      "options": {
+        "device_without_area": "Appareils sans pièce",
+        "device_without_label": "Appareils sans label"
+      }
+    }
+  },
   "issues": {
     "device_without_area": {
       "title": "{name} n'a pas de pièce",
       "description": "Cet appareil n'appartient à aucune pièce, donc aucune de ses entités non plus — une entité hérite la pièce de son appareil. Les automatisations et les assistants vocaux qui raisonnent par pièce ne les voient pas.\n\n[Ouvrir {name}](/config/devices/device/{device_id}) et lui assigner une pièce ; toutes ses entités suivent.\n\nSi cet appareil n'a pas de pièce — un téléphone, un dongle USB, un appareil inventé par une intégration pour y accrocher un bouton — appuyez sur **Ignorer**. Il ne sera plus signalé."
+    },
+    "device_without_label": {
+      "title": "{name} n'a pas de label",
+      "description": "Cet appareil ne porte aucun label : rien de ce qui sélectionne par label — une automatisation, un script, un filtre de tableau de bord — ne l'atteindra jamais.\n\n[Ouvrir {name}](/config/devices/device/{device_id}) et lui poser un label.\n\nLequel, c'est à vous de le décider : Home Assistant n'a pas d'avis sur les labels, et cette vérification non plus. Elle dit seulement que vous n'avez pas encore tranché. Si cet appareil n'en a pas besoin, appuyez sur **Ignorer**."
     }
   }
 }

@@ -12,6 +12,7 @@ alone.
 from types import SimpleNamespace
 
 import custom_components.registry_hygiene as rh
+from custom_components.registry_hygiene.rules import RULE_AREA
 
 
 def prune(monkeypatch, present, keep):
@@ -31,13 +32,13 @@ def prune(monkeypatch, present, keep):
 
 def test_a_device_still_missing_an_area_keeps_its_issue(monkeypatch):
     """Which is what keeps Ignore meaning something across a refresh."""
-    issue = f"{rh.ISSUE_DEVICE_WITHOUT_AREA}_aaa"
+    issue = f"{RULE_AREA}_aaa"
 
     assert prune(monkeypatch, [(rh.DOMAIN, issue)], keep={issue}) == set()
 
 
 def test_a_device_that_got_an_area_loses_its_issue(monkeypatch):
-    issue = f"{rh.ISSUE_DEVICE_WITHOUT_AREA}_aaa"
+    issue = f"{RULE_AREA}_aaa"
 
     assert prune(monkeypatch, [(rh.DOMAIN, issue)], keep=set()) == {(rh.DOMAIN, issue)}
 
