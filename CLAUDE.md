@@ -18,7 +18,7 @@ longer read at all.
 | ---- | ------------- |
 | `rules.py` | The rules, as pure functions, plus `is_a_real_device` — the gate they all sit behind — and which of them default on. **Never imports homeassistant** — that is the point of the file, and what keeps a rule arguable without a running instance. It compares `entry_type` against the bare string `"service"`; `tests/test_floor.py` pins that value so the import can stay out. |
 | `__init__.py` | Reads the registry, calls the rules, reconciles the issues, and re-checks on `EVENT_DEVICE_REGISTRY_UPDATED` behind a `Debouncer` — a restart fires a burst of those. |
-| `config_flow.py` | One entry, one confirmation; the options flow (a checkbox per built-in check, and nothing else in it ever); and the label-rule subentry flow. |
+| `config_flow.py` | One entry, one confirmation; the options flow (a checkbox per built-in check, and nothing else in it ever); and the label-rule subentry flow, whose `user` and `reconfigure` steps share one form and one validation. |
 | `const.py` | The names the flows, the rules and the entry point share, so `config_flow.py` and `repairs.py` can import them without pulling the registries and the loader in behind them. |
 | `repairs.py` | The Fix button on a label repair, and nothing else. Discovered through `dependencies: ["repairs"]` in the manifest. |
 | `scripts/make_icon.py` | Draws `icons/`. Nine rounded squares; the drawing is the source. |

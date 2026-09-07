@@ -44,11 +44,30 @@
             "labels": "Tous. Une entité à qui il en manque deux reçoit une seule réparation qui les nomme tous les deux.",
             "include_technical": "Décoché pour la plupart des règles : le capteur de batterie d'un détecteur n'a pas à porter `securite`. Coché pour une règle qui ne parle que d'elles — `battery`, `firmware`, `update`."
           }
+        },
+        "reconfigure": {
+          "title": "Modifier cette règle",
+          "description": "Les entités reconnues par cette règle doivent porter ces labels. Une règle les reconnaît de deux façons, et l'une suffit — par une classe d'appareil, posée par l'intégration qui a créé l'entité, ou par un mot présent dans l'identifiant de l'entité ou dans le nom de son appareil.",
+          "data": {
+            "device_classes": "Classes d'appareil",
+            "keywords": "Mots",
+            "labels": "Labels requis",
+            "include_technical": "Inclure les entités de configuration et de diagnostic"
+          },
+          "data_description": {
+            "device_classes": "La moitié fiable. Une entité de classe `motion` peut très bien s'appeler `binary_sensor.hall_detection`, qu'aucun mot ne trouverait. Seules les classes réellement utilisées chez vous sont proposées.",
+            "keywords": "Pour tout ce qu'une classe ne sait pas dire — `linky`, `interrupteur`, `seche_serviette`, `homelab`. Cherchés n'importe où dans l'identifiant de l'entité ou dans le nom de l'appareil ; tapez-en un, entrée, puis le suivant. Des mots simples, pas des motifs. Le préfixe de domaine compte : `automation.` seul cadre une règle sur toutes vos automatisations.",
+            "labels": "Tous. Une entité à qui il en manque deux reçoit une seule réparation qui les nomme tous les deux.",
+            "include_technical": "Décoché pour la plupart des règles : le capteur de batterie d'un détecteur n'a pas à porter `securite`. Coché pour une règle qui ne parle que d'elles — `battery`, `firmware`, `update`."
+          }
         }
       },
       "error": {
         "matches_nothing": "Aucune entité de cette instance ne contient un de ces mots : la règle ne se déclencherait jamais.",
         "nothing_to_match": "Une règle a besoin d'au moins une classe d'appareil ou d'un mot."
+      },
+      "abort": {
+        "reconfigure_successful": "Règle mise à jour. Ses réparations sont réalignées immédiatement."
       }
     }
   },

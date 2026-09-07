@@ -129,7 +129,27 @@ class LabelRuleSubentryFlow(ConfigSubentryFlow):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Ask what the rule recognises, and which labels it requires."""
+        """Add a rule."""
+        return await self._async_edit("user", user_input)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Change one. Home Assistant only offers the row a pencil when this
+        step exists; without it a typo in one of four fields means deleting the
+        rule and typing all of it again.
+        """
+        return await self._async_edit(
+            "reconfigure", user_input, self._get_reconfigure_subentry().data
+        )
+
+    async def _async_edit(
+        self,
+        step_id: str,
+        user_input: dict[str, Any] | None,
+        current: dict[str, Any] | None = None,
+    ) -> SubentryFlowResult:
+        """The one form both steps show, and the one validation both run."""
         errors: dict[str, str] = {}
         entity_ids, classes = _matchable(self.hass)
 
@@ -163,32 +183,52 @@ class LabelRuleSubentryFlow(ConfigSubentryFlow):
                         CONF_INCLUDE_TECHNICAL, False
                     ),
                 }
-                return self.async_create_entry(
-                    title=_rule_title(self.hass, data), data=data
+                title = _rule_title(self.hass, data)
+
+                if current is None:
+                    return self.async_create_entry(title=title, data=data)
+
+                # The title is rebuilt from the new data, so a rule whose words
+                # changed does not keep advertising the old ones in its row.
+                # Updating fires the entry's update listener, which reloads and
+                # reconciles the repairs -- including taking down the ones the
+                # rule no longer asks for.
+                return self.async_update_and_abort(
+                    self._get_entry(),
+                    self._get_reconfigure_subentry(),
+                    data=data,
+                    title=title,
                 )
 
+        schema = vol.Schema(
+            {
+                # A free-text multi-select is the chip input: type a word,
+                # press enter, type the next one.
+                vol.Optional(CONF_KEYWORDS): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=[], multiple=True, custom_value=True
+                    )
+                ),
+                vol.Optional(CONF_DEVICE_CLASSES): selector.SelectSelector(
+                    selector.SelectSelectorConfig(options=classes, multiple=True)
+                ),
+                vol.Required(CONF_LABELS): selector.LabelSelector(
+                    selector.LabelSelectorConfig(multiple=True)
+                ),
+                vol.Optional(
+                    CONF_INCLUDE_TECHNICAL, default=False
+                ): selector.BooleanSelector(),
+            }
+        )
+
         return self.async_show_form(
-            step_id="user",
+            step_id=step_id,
             errors=errors,
-            data_schema=vol.Schema(
-                {
-                    # A free-text multi-select is the chip input: type a word,
-                    # press enter, type the next one.
-                    vol.Optional(CONF_KEYWORDS): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=[], multiple=True, custom_value=True
-                        )
-                    ),
-                    vol.Optional(CONF_DEVICE_CLASSES): selector.SelectSelector(
-                        selector.SelectSelectorConfig(options=classes, multiple=True)
-                    ),
-                    vol.Required(CONF_LABELS): selector.LabelSelector(
-                        selector.LabelSelectorConfig(multiple=True)
-                    ),
-                    vol.Optional(
-                        CONF_INCLUDE_TECHNICAL, default=False
-                    ): selector.BooleanSelector(),
-                }
+            # On a reconfigure, the fields come up holding what the rule says
+            # today -- and on a rejected submission, holding what was just
+            # typed, so a bad keyword does not cost the other three fields.
+            data_schema=self.add_suggested_values_to_schema(
+                schema, user_input or current or {}
             ),
         )
 

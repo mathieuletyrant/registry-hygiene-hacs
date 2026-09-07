@@ -87,6 +87,16 @@ def test_a_rule_can_be_a_subentry():
     assert ConfigSubentryFlow is not None
     assert hasattr(ConfigFlow, "async_get_supported_subentry_types")
 
+    # And editing one in place rather than deleting and retyping it: the row
+    # only gets a pencil when the flow has a reconfigure step, and these are
+    # what that step is built out of.
+    for helper in (
+        "_get_entry",
+        "_get_reconfigure_subentry",
+        "async_update_and_abort",
+    ):
+        assert hasattr(ConfigSubentryFlow, helper)
+
 
 def test_a_repair_can_carry_a_flow_and_its_data():
     """The Fix button on a label repair. `issue.data` is what the flow is
@@ -267,6 +277,10 @@ def test_every_translation_carries_every_rule(path):
         assert subentry["step"]["user"]["data"][field]
     for error in ("matches_nothing", "nothing_to_match"):
         assert subentry["error"][error]
+
+    # Both steps show the same form, so both need its text.
+    assert subentry["step"]["reconfigure"]["data"] == subentry["step"]["user"]["data"]
+    assert subentry["abort"]["reconfigure_successful"]
 
 
 def test_the_declared_floor_is_the_one_the_tests_run_against():

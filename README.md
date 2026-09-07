@@ -121,6 +121,11 @@ entities are out of scope unless the rule says otherwise.
 
 A rule whose words match nothing on your instance is refused with a message,
 because a rule that never fires looks exactly like a rule everything passes.
+A rejected submission comes back with everything you typed still in it.
+
+Rules are edited in place from the same page — the row's pencil — and changing
+one brings its repairs in line straight away, including taking down the ones it
+no longer asks for.
 
 ## 🩺 What a report looks like
 
