@@ -16,7 +16,9 @@ from custom_components.registry_hygiene.rules import (
     ALL_RULES,
     DEFAULT_RULES,
     RULE_AREA,
+    RULE_FLOOR,
     RULE_LABEL,
+    areas_without_floor,
     broken_rules,
     is_a_real_device,
     is_a_real_entity,
@@ -107,6 +109,33 @@ def test_labels_are_off_by_default_and_areas_are_not():
     new install with a repair per device.
     """
     assert broken_rules(DEFAULT_RULES, None, set()) == [RULE_AREA]
+
+
+UPSTAIRS = [("salon", "ground"), ("bureau", None), ("jardin", "")]
+
+
+def test_no_floors_means_the_feature_is_unused():
+    """The gate, and the reason this rule can default on where labels cannot.
+    An instance that has never created a floor is not untidy.
+    """
+    assert areas_without_floor(ALL_RULES, False, UPSTAIRS) == []
+
+
+def test_one_floor_is_a_decision_and_the_rest_are_omissions():
+    assert areas_without_floor(ALL_RULES, True, UPSTAIRS) == ["bureau", "jardin"]
+
+
+def test_floors_created_but_nothing_assigned_still_reports():
+    """Deriving the gate from the areas would go silent for exactly the person
+    this helps most: floors made, none used yet.
+    """
+    assert areas_without_floor(ALL_RULES, True, [("salon", None)]) == ["salon"]
+
+
+def test_the_floor_rule_is_on_by_default_and_can_be_turned_off():
+    assert areas_without_floor(DEFAULT_RULES, True, [("salon", None)]) == ["salon"]
+    assert areas_without_floor(set(), True, [("salon", None)]) == []
+    assert RULE_FLOOR in DEFAULT_RULES
 
 
 

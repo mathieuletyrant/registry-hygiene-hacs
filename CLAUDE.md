@@ -28,16 +28,27 @@ A new rule is a function in `rules.py`, a caller in `__init__.py`, and an entry
 under `issues` in all three translation files. If a rule needs `hass` to decide,
 it does not belong in `rules.py`.
 
-## Two grains, on purpose
+## Three grains, on purpose
 
-Areas are checked on **devices**, label rules on **entities**. Not an
-inconsistency to tidy up: an entity inherits its area from its device, so the
-area question is only ever about the device — but a label policy is written
-against entity ids, and a device has none. `rules.py` has a gate for each
-grain, `is_a_real_device` and `is_a_real_entity`.
+Areas are checked on **devices**, label rules on **entities**, the floor rule
+on **areas**. Not an inconsistency to tidy up — each question is asked of the
+thing that can answer it. An entity inherits its area from its device, so the
+area question is only ever about the device; a label policy is written against
+entity ids, and a device has none; and an area is on a floor or it is not, with
+no device to answer for it. `rules.py` has a gate for the first two,
+`is_a_real_device` and `is_a_real_entity`. The floor rule needs none: an area
+is already a thing a person made on purpose, so there is nothing to exempt.
 
 A label rule is satisfied by the label sitting on the entity **or on its
 device**, which is what makes the device-grain use case work anyway.
+
+`area_without_floor` **gates itself** rather than asking, which is why it can
+default on where the label rule cannot. An instance with no floors is not using
+the feature and the rule returns nothing; creating one is the decision, and
+from there an area left off a floor is an omission. The gate reads the floor
+registry, never the areas' own `floor_id`s — floors created with nothing
+assigned yet is precisely the case that most needs reporting, and deriving it
+from the areas would go silent exactly there.
 
 ## Four things not to undo
 

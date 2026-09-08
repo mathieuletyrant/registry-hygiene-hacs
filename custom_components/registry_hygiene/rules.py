@@ -13,8 +13,9 @@ from .const import (
 
 RULE_AREA = "device_without_area"
 RULE_LABEL = "device_without_label"
+RULE_FLOOR = "area_without_floor"
 
-ALL_RULES = (RULE_AREA, RULE_LABEL)
+ALL_RULES = (RULE_AREA, RULE_LABEL, RULE_FLOOR)
 
 # Area is on for everyone; labels are not. Home Assistant has an opinion about
 # rooms -- `area_id` is in the data model, voice assistants and area-scoped
@@ -23,7 +24,17 @@ ALL_RULES = (RULE_AREA, RULE_LABEL)
 # with none of them is not untidy, it just does not use the feature. That rule
 # only means something once its owner has decided on a scheme, which is a thing
 # only its owner can say.
-DEFAULT_RULES = (RULE_AREA,)
+# Floor is on by default too, and for the same reason as area rather than in
+# spite of the labels argument: it gates itself. An instance with no floors is
+# not using the feature and the rule returns nothing, so defaulting it on costs
+# those instances precisely one thing -- a checkbox they never see fire. The
+# moment somebody creates a floor they have decided on a scheme, and an area
+# left off it is an omission rather than a choice.
+#
+# Only new entries pick this up. An existing entry has its list already stored
+# in options, so the rule arrives when its owner next opens the settings, not
+# as a surprise burst of repairs on upgrade.
+DEFAULT_RULES = (RULE_AREA, RULE_FLOOR)
 
 # `integration_type`, from the integration's own manifest. Home Assistant
 # maintains these, which is the whole reason to lean on them rather than on a
@@ -85,6 +96,32 @@ def broken_rules(enabled, area_id, labels):
     if RULE_LABEL in enabled and not labels:
         broken.append(RULE_LABEL)
     return broken
+
+
+def areas_without_floor(enabled, has_floors, areas):
+    """Which areas are on no floor, given `areas` as (area_id, floor_id) pairs.
+
+    A third grain, and the only honest one for this question: an area is not a
+    device and has no device to answer for it. It stays cheap because the count
+    is the count of rooms -- a dozen, where devices are hundreds -- so this
+    cannot flood the way an entity-grain rule can.
+
+    `has_floors` is the gate, and it is why this rule can default on where the
+    label rule cannot. Home Assistant has no opinion about whether an instance
+    uses floors, so an instance with none is not untidy. But creating one *is*
+    the decision, and from there an area left off a floor breaks the same
+    things a missing area breaks: floor-scoped targeting, `floor_id` in a
+    template, "turn off the lights upstairs".
+
+    Deliberately read off the floor registry rather than off these pairs. A
+    user who has created floors and assigned no area yet is the person this is
+    most useful to, and deriving the gate from the pairs would be silent
+    exactly then.
+    """
+    if RULE_FLOOR not in enabled or not has_floors:
+        return []
+
+    return [area_id for area_id, floor_id in areas if not floor_id]
 
 
 

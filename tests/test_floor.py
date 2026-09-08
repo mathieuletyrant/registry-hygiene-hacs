@@ -11,6 +11,7 @@ out it has to be raised, says which call did it.
 import importlib
 import inspect
 import json
+import re
 
 import pytest
 
@@ -206,6 +207,23 @@ def test_the_device_registry_announces_its_changes():
     assert dr.EVENT_DEVICE_REGISTRY_UPDATED
 
 
+def test_the_area_and_floor_registries_carry_the_floor_rule():
+    """`area_without_floor` reads `floor_id` off the area registry and gates
+    itself on the floor registry being non-empty, and re-checks when either
+    moves. Floors landed in 2024.4, well under the floor this pins, but the
+    rule is silent rather than loud if any of these ever goes -- so it gets
+    named here with everything else the minimum has to provide.
+    """
+    from homeassistant.helpers import area_registry as ar, floor_registry as fr
+
+    assert ar.EVENT_AREA_REGISTRY_UPDATED
+    assert fr.EVENT_FLOOR_REGISTRY_UPDATED
+    assert "floor_id" in ar.AreaEntry.__dataclass_fields__
+    assert hasattr(ar.AreaRegistry, "async_list_areas")
+    assert hasattr(ar.AreaRegistry, "async_get_area")
+    assert hasattr(fr.FloorRegistry, "async_list_floors")
+
+
 def test_the_debouncer_takes_a_cooldown_and_a_function():
     """A restart fires a burst of registry events, and this is what absorbs
     them instead of a hand-rolled timer.
@@ -249,7 +267,13 @@ def test_every_translation_carries_every_rule(path):
     for rule in ALL_RULES:
         issue = strings["issues"][rule]
         assert "{name}" in issue["title"]
-        assert "{device_id}" in issue["description"]
+        # Every unfixable repair has to hand over a deep link, because sending
+        # the reader to the right page is the whole of what it can do. Which id
+        # it interpolates follows the rule's grain -- `device_id` for the two
+        # device rules, `area_id` for the floor one -- so this checks the link
+        # is there rather than which registry it points into.
+        assert "](/config/" in issue["description"]
+        assert re.search(r"\{\w+_id\}", issue["description"])
         assert strings["selector"]["rules"]["options"][rule]
 
     label_rule = strings["issues"][ISSUE_MISSING_LABEL]
