@@ -31,7 +31,7 @@
       "step": {
         "user": {
           "title": "Label rule",
-          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id or its device's name.",
+          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id.",
           "data": {
             "device_classes": "Device classes",
             "keywords": "Words",
@@ -47,7 +47,7 @@
         },
         "reconfigure": {
           "title": "Change this rule",
-          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id or its device's name.",
+          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id.",
           "data": {
             "device_classes": "Device classes",
             "keywords": "Words",
@@ -75,7 +75,8 @@
     "rules": {
       "options": {
         "device_without_area": "Devices with no area",
-        "device_without_label": "Devices with no label"
+        "device_without_label": "Devices with no label",
+        "area_without_floor": "Areas with no floor"
       }
     }
   },
@@ -110,6 +111,10 @@
           }
         }
       }
+    },
+    "area_without_floor": {
+      "title": "{name} is on no floor",
+      "description": "This area belongs to no floor, so nothing that reasons by floor reaches it — “turn off the lights upstairs”, a floor-scoped automation, `floor_id` in a template. The devices in it are filed; the room they are in is not.\n\n[Open {name}](/config/areas/area/{area_id}) and set its floor.\n\nThis check only runs once you have created at least one floor, so it is asking you to finish something you started rather than to adopt a scheme. If this room genuinely sits on none — a garden, a garage across the yard — press **Ignore**."
     }
   }
 }

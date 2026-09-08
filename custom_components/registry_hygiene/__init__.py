@@ -7,8 +7,10 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
+    area_registry as ar,
     device_registry as dr,
     entity_registry as er,
+    floor_registry as fr,
     issue_registry as ir,
     label_registry as lr,
 )
@@ -18,6 +20,8 @@ from homeassistant.loader import async_get_integrations
 from .const import DOMAIN, ISSUE_MISSING_LABEL, OPTION_RULES, SUBENTRY_LABEL_RULE
 from .rules import (
     DEFAULT_RULES,
+    RULE_FLOOR,
+    areas_without_floor,
     broken_rules,
     is_a_real_device,
     is_a_real_entity,
@@ -78,6 +82,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 er.EVENT_ENTITY_REGISTRY_UPDATED, _on_device_registry_update
             )
         )
+
+    if RULE_FLOOR in enabled:
+        # Assigning the floor is done on the area page, which moves the area
+        # registry and nothing else -- without these the repair would sit there
+        # after the very edit that fixed it. Creating the first floor matters
+        # too: that is what opens the gate in `areas_without_floor`. Both
+        # registries hold a dozen rows and change by hand, so unlike the entity
+        # registry there is no burst to be afraid of.
+        for signal in (ar.EVENT_AREA_REGISTRY_UPDATED, fr.EVENT_FLOOR_REGISTRY_UPDATED):
+            entry.async_on_unload(
+                hass.bus.async_listen(signal, _on_device_registry_update)
+            )
 
     # Adding or removing a subentry goes through `_async_update_entry`, which
     # fires this, so a new rule applies without anyone reloading anything.
@@ -277,6 +293,23 @@ async def _async_sync_issues(
         )
         for device in await _async_real_devices(hass)
         for rule in broken_rules(enabled, device.area_id, device.labels)
+    }
+    areas = ar.async_get(hass)
+    wanted |= {
+        f"{RULE_FLOOR}_{area_id}": (
+            RULE_FLOOR,
+            {
+                "name": areas.async_get_area(area_id).name,
+                "area_id": area_id,
+            },
+            # Which floor a room is on is a judgment, exactly as its area is.
+            None,
+        )
+        for area_id in areas_without_floor(
+            enabled,
+            bool(fr.async_get(hass).async_list_floors()),
+            [(area.id, area.floor_id) for area in areas.async_list_areas()],
+        )
     }
     wanted |= _label_violations(hass, label_rules)
 

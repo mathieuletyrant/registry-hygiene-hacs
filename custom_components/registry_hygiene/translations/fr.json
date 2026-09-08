@@ -31,7 +31,7 @@
       "step": {
         "user": {
           "title": "Règle de label",
-          "description": "Les entités reconnues par cette règle doivent porter ces labels. Une règle les reconnaît de deux façons, et l'une suffit — par une classe d'appareil, posée par l'intégration qui a créé l'entité, ou par un mot présent dans l'identifiant de l'entité ou dans le nom de son appareil.",
+          "description": "Les entités reconnues par cette règle doivent porter ces labels. Une règle les reconnaît de deux façons, et l'une suffit — par une classe d'appareil, posée par l'intégration qui a créé l'entité, ou par un mot présent dans l'identifiant de l'entité.",
           "data": {
             "device_classes": "Classes d'appareil",
             "keywords": "Mots",
@@ -47,7 +47,7 @@
         },
         "reconfigure": {
           "title": "Modifier cette règle",
-          "description": "Les entités reconnues par cette règle doivent porter ces labels. Une règle les reconnaît de deux façons, et l'une suffit — par une classe d'appareil, posée par l'intégration qui a créé l'entité, ou par un mot présent dans l'identifiant de l'entité ou dans le nom de son appareil.",
+          "description": "Les entités reconnues par cette règle doivent porter ces labels. Une règle les reconnaît de deux façons, et l'une suffit — par une classe d'appareil, posée par l'intégration qui a créé l'entité, ou par un mot présent dans l'identifiant de l'entité.",
           "data": {
             "device_classes": "Classes d'appareil",
             "keywords": "Mots",
@@ -75,7 +75,8 @@
     "rules": {
       "options": {
         "device_without_area": "Appareils sans pièce",
-        "device_without_label": "Appareils sans label"
+        "device_without_label": "Appareils sans label",
+        "area_without_floor": "Zones sans étage"
       }
     }
   },
@@ -110,6 +111,10 @@
           }
         }
       }
+    },
+    "area_without_floor": {
+      "title": "{name} n'est à aucun étage",
+      "description": "Cette zone n'appartient à aucun étage, donc rien de ce qui raisonne par étage ne l'atteint — « éteins les lumières à l'étage », une automatisation ciblant un étage, `floor_id` dans un template. Les appareils qu'elle contient sont rangés ; la pièce où ils se trouvent ne l'est pas.\n\n[Ouvrir {name}](/config/areas/area/{area_id}) et lui donner son étage.\n\nCe contrôle ne se déclenche qu'une fois qu'au moins un étage existe : il vous demande de finir ce que vous avez commencé, pas d'adopter un schéma. Si cette pièce n'est réellement à aucun étage — un jardin, un garage au fond de la cour — appuyez sur **Ignorer**."
     }
   }
 }
