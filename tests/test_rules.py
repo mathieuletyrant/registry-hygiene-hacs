@@ -16,10 +16,12 @@ from custom_components.registry_hygiene.rules import (
     ALL_RULES,
     DEFAULT_RULES,
     RULE_AREA,
+    RULE_EMPTY_FLOOR,
     RULE_FLOOR,
     RULE_LABEL,
     areas_without_floor,
     broken_rules,
+    floors_without_area,
     is_a_real_device,
     is_a_real_entity,
     missing_labels,
@@ -136,6 +138,39 @@ def test_the_floor_rule_is_on_by_default_and_can_be_turned_off():
     assert areas_without_floor(DEFAULT_RULES, True, [("salon", None)]) == ["salon"]
     assert areas_without_floor(set(), True, [("salon", None)]) == []
     assert RULE_FLOOR in DEFAULT_RULES
+
+
+FLOORS = ["ground", "first", "loft"]
+
+
+def test_a_floor_nobody_put_a_room_on_is_reported():
+    assert floors_without_area(ALL_RULES, FLOORS, UPSTAIRS) == ["first", "loft"]
+
+
+def test_a_floor_with_a_room_on_it_is_left_alone():
+    assert floors_without_area(ALL_RULES, ["ground"], UPSTAIRS) == []
+
+
+def test_no_floors_needs_no_gate():
+    """The other half gates on `has_floors`; this half cannot fire without one
+    because there is nothing to iterate.
+    """
+    assert floors_without_area(ALL_RULES, [], UPSTAIRS) == []
+
+
+def test_the_empty_floor_rule_is_on_by_default_and_can_be_turned_off():
+    assert floors_without_area(DEFAULT_RULES, ["loft"], []) == ["loft"]
+    assert floors_without_area(set(), ["loft"], []) == []
+    assert RULE_EMPTY_FLOOR in DEFAULT_RULES
+
+
+def test_the_two_floor_rules_do_not_report_the_same_thing_twice():
+    """Both halves of one unfinished setup, and they never overlap: one is a
+    list of area ids, the other of floor ids.
+    """
+    areas = [("salon", None), ("bureau", "ground")]
+    assert areas_without_floor(ALL_RULES, True, areas) == ["salon"]
+    assert floors_without_area(ALL_RULES, ["ground", "loft"], areas) == ["loft"]
 
 
 

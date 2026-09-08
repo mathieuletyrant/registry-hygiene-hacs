@@ -76,7 +76,8 @@
       "options": {
         "device_without_area": "Devices with no area",
         "device_without_label": "Devices with no label",
-        "area_without_floor": "Areas with no floor"
+        "area_without_floor": "Areas with no floor",
+        "floor_without_area": "Floors with no area"
       }
     }
   },
@@ -115,6 +116,10 @@
     "area_without_floor": {
       "title": "{name} is on no floor",
       "description": "This area belongs to no floor, so nothing that reasons by floor reaches it — “turn off the lights upstairs”, a floor-scoped automation, `floor_id` in a template. The devices in it are filed; the room they are in is not.\n\n[Open {name}](/config/areas/area/{area_id}) and set its floor.\n\nThis check only runs once you have created at least one floor, so it is asking you to finish something you started rather than to adopt a scheme. If this room genuinely sits on none — a garden, a garage across the yard — press **Ignore**."
+    },
+    "floor_without_area": {
+      "title": "{name} has no area on it",
+      "description": "This floor exists and holds nothing, so it appears in every floor picker and matches nothing — a floor-scoped automation targeting it does nothing at all, silently.\n\n[Open areas and floors](/config/areas/dashboard) and either move some rooms onto it, or delete it. Rooms are assigned from the area's own page, not from the floor.\n\nA floor is never created by accident — no integration guesses at one, unlike an area — so this is almost always a setup left half done."
     }
   }
 }

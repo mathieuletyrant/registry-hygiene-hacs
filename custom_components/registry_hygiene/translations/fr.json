@@ -76,7 +76,8 @@
       "options": {
         "device_without_area": "Appareils sans pièce",
         "device_without_label": "Appareils sans label",
-        "area_without_floor": "Zones sans étage"
+        "area_without_floor": "Zones sans étage",
+        "floor_without_area": "Étages sans zone"
       }
     }
   },
@@ -115,6 +116,10 @@
     "area_without_floor": {
       "title": "{name} n'est à aucun étage",
       "description": "Cette zone n'appartient à aucun étage, donc rien de ce qui raisonne par étage ne l'atteint — « éteins les lumières à l'étage », une automatisation ciblant un étage, `floor_id` dans un template. Les appareils qu'elle contient sont rangés ; la pièce où ils se trouvent ne l'est pas.\n\n[Ouvrir {name}](/config/areas/area/{area_id}) et lui donner son étage.\n\nCe contrôle ne se déclenche qu'une fois qu'au moins un étage existe : il vous demande de finir ce que vous avez commencé, pas d'adopter un schéma. Si cette pièce n'est réellement à aucun étage — un jardin, un garage au fond de la cour — appuyez sur **Ignorer**."
+    },
+    "floor_without_area": {
+      "title": "{name} n'a aucune zone",
+      "description": "Cet étage existe et ne contient rien : il apparaît dans tous les sélecteurs d'étage et ne correspond à rien — une automatisation qui le cible ne fait strictement rien, en silence.\n\n[Ouvrir zones et étages](/config/areas/dashboard) et soit y déplacer des pièces, soit le supprimer. Les pièces s'assignent depuis la page de la zone, pas depuis celle de l'étage.\n\nUn étage n'est jamais créé par accident — aucune intégration n'en invente, contrairement aux zones — donc c'est presque toujours une configuration laissée à moitié faite."
     }
   }
 }

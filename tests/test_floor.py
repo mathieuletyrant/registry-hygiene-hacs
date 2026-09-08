@@ -11,7 +11,6 @@ out it has to be raised, says which call did it.
 import importlib
 import inspect
 import json
-import re
 
 import pytest
 
@@ -267,13 +266,12 @@ def test_every_translation_carries_every_rule(path):
     for rule in ALL_RULES:
         issue = strings["issues"][rule]
         assert "{name}" in issue["title"]
-        # Every unfixable repair has to hand over a deep link, because sending
-        # the reader to the right page is the whole of what it can do. Which id
-        # it interpolates follows the rule's grain -- `device_id` for the two
-        # device rules, `area_id` for the floor one -- so this checks the link
-        # is there rather than which registry it points into.
+        # Every unfixable repair has to hand over a link, because sending the
+        # reader to the right page is the whole of what it can do. Not always a
+        # per-object one: devices and areas have their own page and interpolate
+        # an id into it, floors have none and go to the areas dashboard. So the
+        # link is what gets checked, not the shape of it.
         assert "](/config/" in issue["description"]
-        assert re.search(r"\{\w+_id\}", issue["description"])
         assert strings["selector"]["rules"]["options"][rule]
 
     label_rule = strings["issues"][ISSUE_MISSING_LABEL]

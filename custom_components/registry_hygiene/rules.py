@@ -14,8 +14,9 @@ from .const import (
 RULE_AREA = "device_without_area"
 RULE_LABEL = "device_without_label"
 RULE_FLOOR = "area_without_floor"
+RULE_EMPTY_FLOOR = "floor_without_area"
 
-ALL_RULES = (RULE_AREA, RULE_LABEL, RULE_FLOOR)
+ALL_RULES = (RULE_AREA, RULE_LABEL, RULE_FLOOR, RULE_EMPTY_FLOOR)
 
 # Area is on for everyone; labels are not. Home Assistant has an opinion about
 # rooms -- `area_id` is in the data model, voice assistants and area-scoped
@@ -34,7 +35,7 @@ ALL_RULES = (RULE_AREA, RULE_LABEL, RULE_FLOOR)
 # Only new entries pick this up. An existing entry has its list already stored
 # in options, so the rule arrives when its owner next opens the settings, not
 # as a surprise burst of repairs on upgrade.
-DEFAULT_RULES = (RULE_AREA, RULE_FLOOR)
+DEFAULT_RULES = (RULE_AREA, RULE_FLOOR, RULE_EMPTY_FLOOR)
 
 # `integration_type`, from the integration's own manifest. Home Assistant
 # maintains these, which is the whole reason to lean on them rather than on a
@@ -122,6 +123,26 @@ def areas_without_floor(enabled, has_floors, areas):
         return []
 
     return [area_id for area_id, floor_id in areas if not floor_id]
+
+
+def floors_without_area(enabled, floors, areas):
+    """Which floors have no area on them, `areas` again as (area_id, floor_id).
+
+    The other half of `areas_without_floor`, and the two are worth having
+    separately because they are the two ways one setup is left unfinished: the
+    room that never got its floor, and the floor that never got its rooms.
+
+    This one needs no gate. An instance with no floors has nothing to iterate,
+    so it is silent for the same reason and without being asked -- and unlike
+    an area, which Home Assistant will create for you the first time an
+    integration guesses at one, a floor only ever exists because somebody made
+    it. There is no "maybe they did not mean it" case to exempt.
+    """
+    if RULE_EMPTY_FLOOR not in enabled:
+        return []
+
+    used = {floor_id for _, floor_id in areas if floor_id}
+    return [floor_id for floor_id in floors if floor_id not in used]
 
 
 
