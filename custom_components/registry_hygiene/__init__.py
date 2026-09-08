@@ -20,9 +20,11 @@ from homeassistant.loader import async_get_integrations
 from .const import DOMAIN, ISSUE_MISSING_LABEL, OPTION_RULES, SUBENTRY_LABEL_RULE
 from .rules import (
     DEFAULT_RULES,
+    RULE_EMPTY_FLOOR,
     RULE_FLOOR,
     areas_without_floor,
     broken_rules,
+    floors_without_area,
     is_a_real_device,
     is_a_real_entity,
     missing_labels,
@@ -83,7 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
         )
 
-    if RULE_FLOOR in enabled:
+    if enabled & {RULE_FLOOR, RULE_EMPTY_FLOOR}:
         # Assigning the floor is done on the area page, which moves the area
         # registry and nothing else -- without these the repair would sit there
         # after the very edit that fixed it. Creating the first floor matters
@@ -295,6 +297,9 @@ async def _async_sync_issues(
         for rule in broken_rules(enabled, device.area_id, device.labels)
     }
     areas = ar.async_get(hass)
+    floors = fr.async_get(hass).async_list_floors()
+    pairs = [(area.id, area.floor_id) for area in areas.async_list_areas()]
+
     wanted |= {
         f"{RULE_FLOOR}_{area_id}": (
             RULE_FLOOR,
@@ -305,10 +310,20 @@ async def _async_sync_issues(
             # Which floor a room is on is a judgment, exactly as its area is.
             None,
         )
-        for area_id in areas_without_floor(
-            enabled,
-            bool(fr.async_get(hass).async_list_floors()),
-            [(area.id, area.floor_id) for area in areas.async_list_areas()],
+        for area_id in areas_without_floor(enabled, bool(floors), pairs)
+    }
+    by_id = {floor.floor_id: floor for floor in floors}
+    wanted |= {
+        f"{RULE_EMPTY_FLOOR}_{floor_id}": (
+            RULE_EMPTY_FLOOR,
+            {"name": by_id[floor_id].name},
+            # Nothing to decide, but nothing to press either: which rooms are
+            # upstairs is a judgment, and floors are assigned from the area
+            # side anyway.
+            None,
+        )
+        for floor_id in floors_without_area(
+            enabled, [floor.floor_id for floor in floors], pairs
         )
     }
     wanted |= _label_violations(hass, label_rules)

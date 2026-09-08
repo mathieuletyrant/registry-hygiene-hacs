@@ -30,8 +30,8 @@ it does not belong in `rules.py`.
 
 ## Three grains, on purpose
 
-Areas are checked on **devices**, label rules on **entities**, the floor rule
-on **areas**. Not an inconsistency to tidy up — each question is asked of the
+Areas are checked on **devices**, label rules on **entities**, the two floor
+rules on **areas** and on **floors**. Not an inconsistency to tidy up — each question is asked of the
 thing that can answer it. An entity inherits its area from its device, so the
 area question is only ever about the device; a label policy is written against
 entity ids, and a device has none; and an area is on a floor or it is not, with
@@ -49,6 +49,12 @@ from there an area left off a floor is an omission. The gate reads the floor
 registry, never the areas' own `floor_id`s — floors created with nothing
 assigned yet is precisely the case that most needs reporting, and deriving it
 from the areas would go silent exactly there.
+
+`floor_without_area` is the other half of the same unfinished setup: the room
+that never got its floor, and the floor that never got its rooms. It needs no
+gate of its own — an instance with no floors has nothing to iterate. It is also
+the one rule with no exemption to argue about, because unlike an area, which an
+integration will happily invent, a floor exists only because somebody made it.
 
 ## Four things not to undo
 
