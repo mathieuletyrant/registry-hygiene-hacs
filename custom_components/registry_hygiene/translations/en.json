@@ -31,7 +31,7 @@
       "step": {
         "user": {
           "title": "Label rule",
-          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id or its device's name.",
+          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id.",
           "data": {
             "device_classes": "Device classes",
             "keywords": "Words",
@@ -47,7 +47,7 @@
         },
         "reconfigure": {
           "title": "Change this rule",
-          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id or its device's name.",
+          "description": "Entities recognised by this rule must carry these labels. A rule can recognise them two ways, and either is enough — by a device class, which the integration that created the entity sets, or by a word in the entity id.",
           "data": {
             "device_classes": "Device classes",
             "keywords": "Words",
